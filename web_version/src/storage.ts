@@ -27,10 +27,23 @@ async function transaction<T>(
   return new Promise<T>((resolve, reject) => {
     const tx = database.transaction(storeName, mode);
     const request = action(tx.objectStore(storeName));
-    request.onsuccess = () => resolve(request.result);
+    let result: T;
+    request.onsuccess = () => {
+      result = request.result;
+    };
     request.onerror = () => reject(request.error);
-    tx.oncomplete = () => database.close();
-    tx.onerror = () => reject(tx.error);
+    tx.oncomplete = () => {
+      database.close();
+      resolve(result);
+    };
+    tx.onerror = () => {
+      database.close();
+      reject(tx.error);
+    };
+    tx.onabort = () => {
+      database.close();
+      reject(tx.error ?? new DOMException("IndexedDB transaction aborted", "AbortError"));
+    };
   });
 }
 
@@ -44,10 +57,18 @@ export async function saveState(state: AppState): Promise<void> {
 
 export async function saveMedia(file: Blob): Promise<string> {
   const id = crypto.randomUUID();
-  await transaction<IDBValidKey>(MEDIA_STORE, "readwrite", (store) => store.put(file, id));
+  const storedMedia = { data: await file.arrayBuffer(), type: file.type };
+  await transaction<IDBValidKey>(MEDIA_STORE, "readwrite", (store) => store.put(storedMedia, id));
   return id;
 }
 
 export async function loadMedia(id: string): Promise<Blob | undefined> {
-  return transaction<Blob | undefined>(MEDIA_STORE, "readonly", (store) => store.get(id));
+  const stored = await transaction<{ data: ArrayBuffer; type: string } | Blob | undefined>(
+    MEDIA_STORE,
+    "readonly",
+    (store) => store.get(id),
+  );
+  if (!stored) return undefined;
+  if (stored instanceof Blob) return stored;
+  return new Blob([stored.data], { type: stored.type });
 }

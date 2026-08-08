@@ -36,9 +36,11 @@ export interface Listing {
   city: string;
   rentalType: RentalType;
   rent: number;
+  prepaidRentMonths?: number;
   currency: "CNY";
   status: ListingStatus;
   focused: boolean;
+  eliminationReason?: string;
   address?: string;
   sourceUrl?: string;
   area?: number;
@@ -55,7 +57,7 @@ export interface Listing {
 
 export interface DecisionEvent {
   id: string;
-  type: "focused" | "unfocused" | "eliminated" | "restored" | "confirmed" | "withdrawn";
+  type: "focused" | "unfocused" | "eliminated" | "restored" | "compared" | "confirmed" | "withdrawn";
   listingId: string;
   at: string;
   reason?: string;
@@ -134,9 +136,15 @@ export const initialState: AppState = {
     events: [],
     conditions: [
       { id: "budget", name: "月均居住成本不超过 ¥9,500", importance: "required" },
+      { id: "move-in", name: "在最晚日期前可入住", importance: "required" },
+      { id: "rental-type", name: "符合整租或合租要求", importance: "preferred" },
       { id: "commute", name: "单程通勤不超过 40 分钟", importance: "required" },
       { id: "sunlight", name: "自然采光良好", importance: "preferred" },
       { id: "private", name: "拥有独立私人空间", importance: "preferred" },
+      { id: "pet", name: "允许宠物", importance: "ignored" },
+      { id: "elevator", name: "有电梯", importance: "ignored" },
+      { id: "parking", name: "方便停车", importance: "ignored" },
+      { id: "cooking", name: "允许做饭", importance: "preferred" },
     ],
     listings: [
       {
@@ -145,6 +153,7 @@ export const initialState: AppState = {
         city: "上海",
         rentalType: "entire",
         rent: 7800,
+        prepaidRentMonths: 1,
         currency: "CNY",
         status: "candidate",
         focused: true,
@@ -177,6 +186,7 @@ export const initialState: AppState = {
         city: "上海",
         rentalType: "shared",
         rent: 8200,
+        prepaidRentMonths: 1,
         currency: "CNY",
         status: "candidate",
         focused: true,
@@ -202,6 +212,7 @@ export const initialState: AppState = {
         city: "上海",
         rentalType: "entire",
         rent: 6900,
+        prepaidRentMonths: 1,
         currency: "CNY",
         status: "candidate",
         focused: false,
@@ -240,6 +251,45 @@ export const createListing = (
   inspections: makeInspectionItems(),
 });
 
+const defaultConditions = (): ConditionDefinition[] => [
+  { id: "budget", name: "月均居住成本不超过预算", importance: "required" },
+  { id: "move-in", name: "在最晚日期前可入住", importance: "required" },
+  { id: "rental-type", name: "符合整租或合租要求", importance: "preferred" },
+  { id: "commute", name: "单程通勤时间不超过上限", importance: "required" },
+  { id: "pet", name: "允许宠物", importance: "ignored" },
+  { id: "elevator", name: "有电梯", importance: "ignored" },
+  { id: "parking", name: "方便停车", importance: "ignored" },
+  { id: "cooking", name: "允许做饭", importance: "preferred" },
+];
+
+export const createEmptyTask = (): RentalTask => ({
+  id: crypto.randomUUID(),
+  title: "新的选房任务",
+  city: "",
+  regionTemplate: "mainland-cn",
+  currency: "CNY",
+  areaUnit: "sqm",
+  expectedMonths: 12,
+  commuteDestination: "",
+  listings: [],
+  conditions: defaultConditions(),
+  comparisonIds: [],
+  events: [],
+  completed: false,
+});
+
+export function getComparisonListings(task: RentalTask): Listing[] {
+  const listings = task.comparisonIds
+    .map((id) => task.listings.find((listing) => listing.id === id))
+    .filter((listing): listing is Listing => Boolean(listing));
+  if (!task.baselineId) return listings;
+  return listings.sort((left, right) => {
+    if (left.id === task.baselineId) return -1;
+    if (right.id === task.baselineId) return 1;
+    return 0;
+  });
+}
+
 export function normalizeTask(task: RentalTask): RentalTask {
   const candidates = task.listings.filter((listing) => listing.status === "candidate");
   const candidateIds = new Set(candidates.map((listing) => listing.id));
@@ -251,6 +301,7 @@ export function normalizeTask(task: RentalTask): RentalTask {
     comparisonIds,
     baselineId,
     finalListingId: finalStillExists ? task.finalListingId : undefined,
+    finalReason: finalStillExists ? task.finalReason : undefined,
     completed: Boolean(finalStillExists && task.completed),
   };
 }

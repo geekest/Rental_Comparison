@@ -13,9 +13,22 @@ describe("隐私导出", () => {
   });
 
   it("测试摘要只保留计数和布尔行为", () => {
-    const text = JSON.stringify(buildTestSummary(structuredClone(initialState)));
+    const state = structuredClone(initialState);
+    const summary = buildTestSummary(state);
+    expect(summary.comparedAtLeastTwo).toBe(false);
+    expect(summary.adjustedFocusOrElimination).toBe(false);
+    state.task.events.push({ id: "event-1", type: "compared", listingId: "xuhui", at: "2026-08-09" });
+    expect(buildTestSummary(state).comparedAtLeastTwo).toBe(true);
+    const text = JSON.stringify(summary);
     expect(text).not.toContain("7800");
     expect(text).not.toContain("徐汇");
     expect(text).not.toContain("上海");
+  });
+
+  it("决策报告包含淘汰原因", () => {
+    const state = structuredClone(initialState);
+    state.task.listings[2].status = "eliminated";
+    state.task.listings[2].eliminationReason = "通勤超出硬性上限";
+    expect(buildDecisionReport(state)).toContain("通勤超出硬性上限");
   });
 });

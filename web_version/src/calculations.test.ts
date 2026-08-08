@@ -15,6 +15,20 @@ describe("真实成本", () => {
     expect(result.unknowns).toContain("押金");
   });
 
+  it("首期现金按实际预付租金月数计算", () => {
+    const listing = structuredClone(initialState.task.listings[1]);
+    listing.prepaidRentMonths = 3;
+    expect(calculateCosts(listing, 12).firstCash).toBe(32800);
+  });
+
+  it("预付租金月数未知时不伪造首期总额", () => {
+    const listing = structuredClone(initialState.task.listings[1]);
+    listing.prepaidRentMonths = undefined;
+    const result = calculateCosts(listing, 12);
+    expect(result.firstCash).toBeUndefined();
+    expect(result.unknowns).toContain("预付租金月数");
+  });
+
   it("硬性条件未知也会保留为风险", () => {
     const task = structuredClone(initialState.task);
     task.listings[0].conditionResults.commute = "unknown";

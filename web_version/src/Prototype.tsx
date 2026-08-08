@@ -21,7 +21,9 @@ import { calculateCosts, formatMoney, getInspectionIssues, getRequiredConflicts 
 import {
   type AppState,
   type ConditionResult,
+  createEmptyTask,
   createListing,
+  getComparisonListings,
   type InspectionState,
   initialState,
   type Listing,
@@ -35,7 +37,7 @@ import "./prototype.css";
 
 type Tab = "listings" | "compare" | "conditions";
 type CompareSection = "cost" | "commute" | "conditions" | "inspection";
-type Sheet = "add" | "detail" | "task" | "manage" | "final" | "feedback" | "result" | null;
+type Sheet = "add" | "detail" | "task" | "manage" | "eliminate" | "final" | "feedback" | "result" | null;
 
 const cloneInitialState = () => structuredClone(initialState);
 
@@ -78,9 +80,7 @@ export default function Prototype() {
     setState((current) => ({ ...current, task: normalizeTask(transform(current.task)) }));
 
   const selected = state.task.listings.find((listing) => listing.id === selectedId) ?? state.task.listings[0];
-  const comparison = state.task.comparisonIds
-    .map((id) => state.task.listings.find((listing) => listing.id === id))
-    .filter((listing): listing is Listing => Boolean(listing));
+  const comparison = getComparisonListings(state.task);
 
   const dismissKeyboard = () => {
     keyboard.hide();
@@ -115,24 +115,37 @@ export default function Prototype() {
       listings: task.listings.map((listing) => (listing.id === listingId ? { ...listing, ...patch } : listing)),
     }));
 
-  const eliminate = (listing: Listing) => {
-    updateTask((task) => ({
-      ...task,
-      listings: task.listings.map((item) =>
-        item.id === listing.id
-          ? { ...item, status: listing.status === "candidate" ? "eliminated" : "candidate", focused: false }
-          : item,
-      ),
-      events: [
-        ...task.events,
-        {
-          id: crypto.randomUUID(),
-          type: listing.status === "candidate" ? "eliminated" : "restored",
-          listingId: listing.id,
-          at: new Date().toISOString(),
-        },
-      ],
-    }));
+  const eliminate = (listing: Listing, reason = "") => {
+    updateTask((task) => {
+      const at = new Date().toISOString();
+      const isEliminatingFinal = listing.status === "candidate" && task.finalListingId === listing.id;
+      return {
+        ...task,
+        listings: task.listings.map((item) =>
+          item.id === listing.id
+            ? {
+                ...item,
+                status: listing.status === "candidate" ? "eliminated" : "candidate",
+                focused: false,
+                eliminationReason: listing.status === "candidate" ? reason.trim() || undefined : undefined,
+              }
+            : item,
+        ),
+        events: [
+          ...task.events,
+          ...(isEliminatingFinal
+            ? [{ id: crypto.randomUUID(), type: "withdrawn" as const, listingId: listing.id, at }]
+            : []),
+          {
+            id: crypto.randomUUID(),
+            type: listing.status === "candidate" ? "eliminated" : "restored",
+            listingId: listing.id,
+            at,
+            reason: listing.status === "candidate" ? reason.trim() || undefined : undefined,
+          },
+        ],
+      };
+    });
     setToast(listing.status === "candidate" ? "已淘汰，可随时恢复" : "已恢复到候选池");
   };
 
@@ -181,7 +194,14 @@ export default function Prototype() {
         <PrivacyNotice onConfirm={() => setState((current) => ({ ...current, privacyAcknowledged: true }))} />
       ) : null}
       {tab === "listings" ? (
-        <ListingsScreen state={state} onOpen={openSheet} onCompare={toggleComparison} onEliminate={eliminate} />
+        <ListingsScreen
+          state={state}
+          onOpen={openSheet}
+          onCompare={toggleComparison}
+          onEliminate={(listing) =>
+            listing.status === "candidate" ? openSheet("eliminate", listing.id) : eliminate(listing)
+          }
+        />
       ) : tab === "compare" ? (
         <CompareScreen
           state={state}
@@ -199,6 +219,24 @@ export default function Prototype() {
         tab={tab}
         onChange={(nextTab) => {
           dismissKeyboard();
+          if (nextTab === "compare" && state.task.comparisonIds.length >= 2) {
+            updateTask((task) =>
+              task.events.some((event) => event.type === "compared")
+                ? task
+                : {
+                    ...task,
+                    events: [
+                      ...task.events,
+                      {
+                        id: crypto.randomUUID(),
+                        type: "compared",
+                        listingId: task.baselineId ?? task.comparisonIds[0],
+                        at: new Date().toISOString(),
+                      },
+                    ],
+                  },
+            );
+          }
           setTab(nextTab);
         }}
         compareCount={state.task.comparisonIds.length}
@@ -246,7 +284,18 @@ export default function Prototype() {
         description="任务包含多套可以互相比较的租赁方案。"
         snap={0.76}
       >
-        <TaskEditor state={state} setState={setState} />
+        <TaskEditor
+          state={state}
+          setState={setState}
+          onCreateNew={() => {
+            if (!window.confirm("创建新任务会替换当前设备中的选房任务。请先导出需要保留的结果，确认继续吗？")) return;
+            setState((current) => ({ ...current, task: createEmptyTask() }));
+            setSelectedId("");
+            setTab("listings");
+            setSheet(null);
+            setToast("已创建新的选房任务");
+          }}
+        />
       </BottomSheet>
 
       <BottomSheet
@@ -257,6 +306,25 @@ export default function Prototype() {
         snap={0.82}
       >
         <CompareManager state={state} updateTask={updateTask} />
+      </BottomSheet>
+
+      <BottomSheet
+        open={sheet === "eliminate"}
+        onOpenChange={(open) => !open && setSheet(null)}
+        title="淘汰这套房源"
+        description="原因可以不填，之后仍可恢复到候选池。"
+        snap={0.55}
+      >
+        {selected ? (
+          <EliminateDecision
+            key={selected.id}
+            listing={selected}
+            onConfirm={(reason) => {
+              eliminate(selected, reason);
+              setSheet(null);
+            }}
+          />
+        ) : null}
       </BottomSheet>
 
       <BottomSheet
@@ -561,14 +629,16 @@ function CompareSectionContent({
           unit="元 / 月"
         />
         <DetailRows
-          labels={["月租", "月均固定费用", "不退一次性费用摊销"]}
+          labels={["月租", "月均固定费用", "不退一次性费用月均摊销", "首期预付租金", "押金与一次性费用"]}
           listings={listings}
           values={(listing) => {
             const cost = calculateCosts(listing, task.expectedMonths);
             return [
               formatMoney(listing.rent),
-              formatMoney((cost.monthlyHousing ?? listing.rent) - listing.rent),
-              `${task.expectedMonths} 个月口径`,
+              formatMoney(cost.monthlyFees),
+              `${formatMoney(cost.amortizedOneTime)}（按 ${task.expectedMonths} 个月）`,
+              formatMoney(cost.prepaidRent),
+              formatMoney(cost.firstCashExtras),
             ];
           }}
         />
@@ -819,7 +889,12 @@ function AddListingForm({ city, onSave }: { city: string; onSave: (listing: List
     if (!file) return;
     try {
       setScreenshotId(await saveMedia(file));
-      setOcrStatus("正在本地识别 0%");
+    } catch {
+      setOcrStatus("截图保存失败，请重新选择");
+      return;
+    }
+    setOcrStatus("正在本地识别 0%");
+    try {
       const suggestion = await recognizeListingScreenshot(file, (progress) =>
         setOcrStatus(`正在本地识别 ${progress}%`),
       );
@@ -924,6 +999,25 @@ function AddListingForm({ city, onSave }: { city: string; onSave: (listing: List
   );
 }
 
+function EliminateDecision({ listing, onConfirm }: { listing: Listing; onConfirm: (reason: string) => void }) {
+  const [reason, setReason] = useState(listing.eliminationReason ?? "");
+  return (
+    <div className="sheet-form">
+      <p className="group-help">{listing.name} 将退出当前比较，但不会被删除。</p>
+      <Field label="淘汰原因（可选）">
+        <KeyboardTextarea
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          placeholder="例如：通勤超过硬性上限"
+        />
+      </Field>
+      <button className="full-primary" onClick={() => onConfirm(reason)}>
+        确认淘汰
+      </button>
+    </div>
+  );
+}
+
 function ListingEditor({
   task,
   listing,
@@ -937,6 +1031,9 @@ function ListingEditor({
 }) {
   const [costName, setCostName] = useState("");
   const [costAmount, setCostAmount] = useState("");
+  const [costCadence, setCostCadence] = useState<Listing["costs"][number]["cadence"]>("monthly");
+  const [costRefundable, setCostRefundable] = useState(false);
+  const [inspectionName, setInspectionName] = useState("");
   const updateInspection = (id: string, patch: Partial<Listing["inspections"][number]>) =>
     onChange({ inspections: listing.inspections.map((item) => (item.id === id ? { ...item, ...patch } : item)) });
   const addPhoto = async (inspectionId: string, file?: File) => {
@@ -1001,6 +1098,20 @@ function ListingEditor({
       </section>
       <section>
         <h3>真实成本</h3>
+        <Field label="首期预付租金（月，可未知）">
+          <KeyboardInput
+            inputMode="numeric"
+            value={listing.prepaidRentMonths ?? ""}
+            onChange={(event) => {
+              const months = Number(event.target.value);
+              onChange({
+                prepaidRentMonths:
+                  event.target.value && Number.isFinite(months) ? Math.max(1, Math.round(months)) : undefined,
+              });
+            }}
+            placeholder="例如：付三填 3"
+          />
+        </Field>
         {listing.costs.map((cost) => (
           <div className="cost-row" key={cost.id}>
             <button
@@ -1037,25 +1148,44 @@ function ListingEditor({
           <button
             disabled={!costName.trim()}
             onClick={() => {
+              const parsedAmount = Number(costAmount);
+              const hasAmount = costAmount !== "" && Number.isFinite(parsedAmount) && parsedAmount >= 0;
               onChange({
                 costs: [
                   ...listing.costs,
                   {
                     id: crypto.randomUUID(),
                     name: costName.trim(),
-                    amount: costAmount ? Number(costAmount) : undefined,
-                    cadence: "monthly",
-                    refundable: false,
-                    confirmed: Boolean(costAmount),
+                    amount: hasAmount ? parsedAmount : undefined,
+                    cadence: costCadence,
+                    refundable: costCadence === "oneTime" && costRefundable,
+                    confirmed: hasAmount,
                   },
                 ],
               });
               setCostName("");
               setCostAmount("");
+              setCostCadence("monthly");
+              setCostRefundable(false);
             }}
           >
             <PlusIcon />
           </button>
+        </div>
+        <div className="cost-options">
+          <select value={costCadence} onChange={(event) => setCostCadence(event.target.value as typeof costCadence)}>
+            <option value="monthly">每月费用</option>
+            <option value="oneTime">一次性费用</option>
+          </select>
+          <label>
+            <input
+              type="checkbox"
+              checked={costRefundable}
+              disabled={costCadence === "monthly"}
+              onChange={(event) => setCostRefundable(event.target.checked)}
+            />
+            可退
+          </label>
         </div>
       </section>
       <section>
@@ -1095,6 +1225,9 @@ function ListingEditor({
             <div className={`inspection-editor ${item.state}`} key={item.id}>
               <div>
                 <strong>{item.name}</strong>
+                <button className="inspection-action" onClick={() => updateInspection(item.id, { hidden: true })}>
+                  隐藏
+                </button>
                 <select
                   value={item.state}
                   onChange={(event) => updateInspection(item.id, { state: event.target.value as InspectionState })}
@@ -1123,6 +1256,46 @@ function ListingEditor({
               ) : null}
             </div>
           ))}
+        {listing.inspections.some((item) => item.hidden) ? (
+          <div className="hidden-inspections">
+            <small>已隐藏</small>
+            {listing.inspections
+              .filter((item) => item.hidden)
+              .map((item) => (
+                <button key={item.id} onClick={() => updateInspection(item.id, { hidden: false })}>
+                  恢复“{item.name}”
+                </button>
+              ))}
+          </div>
+        ) : null}
+        <div className="inline-add">
+          <KeyboardInput
+            value={inspectionName}
+            onChange={(event) => setInspectionName(event.target.value)}
+            placeholder="添加自定义检查项"
+          />
+          <button
+            disabled={!inspectionName.trim()}
+            onClick={() => {
+              onChange({
+                inspections: [
+                  ...listing.inspections,
+                  {
+                    id: crypto.randomUUID(),
+                    name: inspectionName.trim(),
+                    state: "unchecked",
+                    note: "",
+                    photoIds: [],
+                    custom: true,
+                  },
+                ],
+              });
+              setInspectionName("");
+            }}
+          >
+            <PlusIcon />
+          </button>
+        </div>
       </section>
     </div>
   );
@@ -1131,9 +1304,11 @@ function ListingEditor({
 function TaskEditor({
   state,
   setState,
+  onCreateNew,
 }: {
   state: AppState;
   setState: React.Dispatch<React.SetStateAction<AppState>>;
+  onCreateNew: () => void;
 }) {
   const task = state.task;
   const update = (patch: Partial<typeof task>) =>
@@ -1181,6 +1356,9 @@ function TaskEditor({
           没有账户、云同步或业务服务器。浏览器数据被清理后无法恢复。
         </p>
       </div>
+      <button className="outline-button" onClick={onCreateNew}>
+        <PlusIcon /> 创建新的选房任务
+      </button>
     </div>
   );
 }
@@ -1249,6 +1427,7 @@ function FinalDecision({
 }) {
   const [listingId, setListingId] = useState(state.task.finalListingId ?? state.task.comparisonIds[0] ?? "");
   const [reason, setReason] = useState(state.task.finalReason ?? "");
+  const [risksAcknowledged, setRisksAcknowledged] = useState(false);
   const listing = state.task.listings.find((item) => item.id === listingId);
   const risks = listing
     ? [
@@ -1284,6 +1463,16 @@ function FinalDecision({
           </p>
         )}
       </div>
+      {risks.length ? (
+        <label className="acknowledge-risk">
+          <input
+            type="checkbox"
+            checked={risksAcknowledged}
+            onChange={(event) => setRisksAcknowledged(event.target.checked)}
+          />
+          我已知晓以上未解决项，仍由我自主完成选择
+        </label>
+      ) : null}
       <Field label="我的选择理由">
         <KeyboardTextarea
           value={reason}
@@ -1293,7 +1482,7 @@ function FinalDecision({
       </Field>
       <button
         className="full-primary"
-        disabled={!listingId || !reason.trim()}
+        disabled={!listingId || !reason.trim() || (risks.length > 0 && !risksAcknowledged)}
         onClick={() => {
           updateTask((task) => ({
             ...task,
@@ -1330,6 +1519,10 @@ function ResultSheet({
   onFeedback: () => void;
 }) {
   const finalListing = state.task.listings.find((item) => item.id === state.task.finalListingId);
+  const finalCosts = finalListing ? calculateCosts(finalListing, state.task.expectedMonths) : undefined;
+  const finalConflicts = finalListing ? getRequiredConflicts(state.task, finalListing) : [];
+  const finalIssues = finalListing ? getInspectionIssues(finalListing) : [];
+  const eliminated = state.task.listings.filter((listing) => listing.status === "eliminated");
   return (
     <div className="result-sheet">
       {finalListing ? (
@@ -1346,14 +1539,50 @@ function ResultSheet({
               <small>月均居住成本</small>
             </p>
             <p>
+              <strong>{formatMoney(finalCosts?.firstCash)}</strong>
+              <small>首期现金压力</small>
+            </p>
+            <p>
               <strong>{finalListing.commuteMinutes ?? "?"} 分钟</strong>
               <small>单程通勤</small>
             </p>
           </div>
+          <section className="result-evidence">
+            <h3>仍需留意</h3>
+            {finalConflicts.length || finalIssues.length || finalCosts?.unknowns.length ? (
+              <ul>
+                {finalConflicts.map((condition) => (
+                  <li key={condition.id}>硬性条件：{condition.name}</li>
+                ))}
+                {finalIssues.map((issue) => (
+                  <li key={issue.id}>看房异常：{issue.name}</li>
+                ))}
+                {finalCosts?.unknowns.map((unknown) => (
+                  <li key={unknown}>未确认：{unknown}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>暂无已记录的硬性冲突、看房异常或未知费用。</p>
+            )}
+          </section>
         </>
       ) : (
         <p>尚未确认最终房源。</p>
       )}
+      <section className="result-evidence">
+        <h3>已淘汰方案</h3>
+        {eliminated.length ? (
+          eliminated.map((listing) => (
+            <p key={listing.id}>
+              <strong>{listing.name}</strong>
+              <br />
+              <small>{listing.eliminationReason || "未填写淘汰原因"}</small>
+            </p>
+          ))
+        ) : (
+          <p>暂无已淘汰方案。</p>
+        )}
+      </section>
       <div className="privacy-callout">
         <DownloadIcon />
         <p>

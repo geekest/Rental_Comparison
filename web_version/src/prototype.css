@@ -757,6 +757,25 @@ button {
   color: white;
   background: var(--blue);
 }
+.cost-options {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.cost-options select {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--grouped);
+}
+.cost-options label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--secondary);
+  font-size: 13px;
+}
 
 .empty-state {
   padding: 190px 40px 120px;
@@ -983,6 +1002,31 @@ button {
   align-items: center;
   justify-content: space-between;
 }
+.inspection-action {
+  margin-left: auto;
+  border: 0;
+  color: var(--secondary);
+  background: transparent;
+  font-size: 12px;
+}
+.hidden-inspections {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.hidden-inspections small {
+  width: 100%;
+  color: var(--secondary);
+}
+.hidden-inspections button {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--blue);
+  background: white;
+  font-size: 12px;
+}
 .inspection-editor select {
   border: 0;
   background: transparent;
@@ -1105,6 +1149,37 @@ button {
 }
 .result-facts small {
   color: var(--secondary);
+}
+.result-evidence {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: white;
+}
+.result-evidence h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+.result-evidence p,
+.result-evidence ul {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.result-evidence ul {
+  padding-left: 18px;
+}
+.acknowledge-risk {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: var(--secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.acknowledge-risk input {
+  margin-top: 2px;
 }
 .danger-link {
   justify-content: center;
