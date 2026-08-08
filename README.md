@@ -6,13 +6,13 @@ Rental Comparison 不提供房源供给，也不替用户计算“最佳房源�
 
 ## 当前阶段
 
-项目处于 **手机 Web 验证原型定义完成、正式实现尚未开始** 的阶段：
+手机 Web 验证 MVP 已在 `web_version/` 实现，当前进入真实用户验证准备阶段：
 
-- 产品目标、MVP 范围和选房决策核心流程已经确认；
 - 首轮面向中国大陆城市长租用户，通过真实候选房源验证产品价值；
-- 当前已提交内容中没有可编译运行的 App 或 Web 工程；
-- Web 技术栈、本地 OCR、本地持久化、支持浏览器和构建命令仍待确认；
-- Web 验证达到门槛并完成流程修正后，才评估原生 iPhone TestFlight 版本。
+- 已支持录入、比较、重点考虑、淘汰与恢复、最终确认和撤回；
+- Web 原型采用 React、TypeScript、Vite、IndexedDB 和浏览器本地 OCR；
+- 没有账户、业务服务器、云同步或行为埋点；
+- Web 验证达到门槛并完成流程修正后，再评估原生 iPhone TestFlight 版本。
 
 ## 核心流程
 
@@ -39,52 +39,62 @@ Rental Comparison 不提供房源供给，也不替用户计算“最佳房源�
 
 ## 仓库结构
 
-当前已提交文件结构如下：
-
 ```text
 Rental_Comparison/
-├── .codex/plans/                         # 复杂任务执行计划
+├── .codex/plans/                          # 复杂任务执行计划
 ├── docs/
-│   ├── product/
-│   │   ├── product_brief.md              # 产品目标、用户问题与验证指标
-│   │   └── mvp_scope.md                  # Web 验证 MVP 范围
-│   ├── specs/
-│   │   └── spec_001_core_flow.md         # 核心流程、数据规则与验收标准
-│   ├── adr/
-│   │   └── 0001_local_storage_strategy.md # 本地存储待决策记录
+│   ├── product/                           # 产品目标与 MVP 范围
+│   ├── specs/                             # 功能行为与验收标准
+│   ├── adr/                               # 架构决策
 │   └── design/
-│       └── sketch_map.md                 # 设计节点与实现状态索引
-├── Rental_ComparisonTests/               # 单元测试占位目录
-├── Rental_ComparisonUITests/             # UI 测试占位目录
+│       ├── references/                    # 已确认视觉参考
+│       ├── sketch_map.md                  # 设计节点索引
+│       └── web_prototype_map.md           # Web 页面与实现映射
+├── web_version/                           # 可运行手机 Web MVP
+├── Rental_Comparison/                     # 原生 App 占位目录
+├── Rental_ComparisonTests/                # 原生单元测试占位目录
+├── Rental_ComparisonUITests/              # 原生 UI 测试占位目录
 ├── AGENTS.md                              # 仓库工程与文档规则
 ├── CONTEXT.md                             # 业务术语、状态和长期不变量
 └── README.md
 ```
 
-测试目录目前只包含 `.gitkeep` 占位文件。加入真实测试文件后可以删除对应占位文件。
-
 ## 文档入口
 
 | 文档 | 用途 | 当前状态 |
 | --- | --- | --- |
-| [项目上下文](CONTEXT.md) | 业务对象、统一术语、状态与长期不变量 | 已确认，含待解决工程问题 |
+| [项目上下文](CONTEXT.md) | 业务对象、统一术语、状态与长期不变量 | 已更新至 Web MVP |
 | [产品简述](docs/product/product_brief.md) | 用户问题、产品目标、原则与成功指标 | 已确认 |
 | [MVP 范围](docs/product/mvp_scope.md) | P0 能力、非目标、验收与验证门槛 | 已确认 |
 | [核心流程规格](docs/specs/spec_001_core_flow.md) | 完整流程、数据要求、异常与验收标准 | 已确认 |
-| [本地存储策略 ADR](docs/adr/0001_local_storage_strategy.md) | 后续存储技术决策的位置 | 待决策 |
-| [设计草图索引](docs/design/sketch_map.md) | 设计节点与实现状态映射 | 草稿 |
+| [本地存储策略 ADR](docs/adr/0001_local_storage_strategy.md) | IndexedDB 和本地媒体存储决策 | 已接受 |
+| [Web 原型页面映射](docs/design/web_prototype_map.md) | 参考图、页面与实现状态 | 已实现 |
+| [Web 工程说明](web_version/README.md) | 运行、验证、数据与 OCR | 已验证 |
 | [工程协作规则](AGENTS.md) | 实施、验证、Git 和文档归档约定 | 当前规则 |
 
 文档之间发生冲突时，应先停止实现并确认，不自行选择解释。
 
-## 开始开发前
+## 本地运行
 
-当前没有已确认的安装、启动、构建或测试命令。开始实现前，至少需要完成以下决策：
+```bash
+cd web_version
+npm ci
+npm run dev
+```
 
-1. 确定 Web 原型的代码目录、技术栈和部署方式；
-2. 明确首轮支持的手机浏览器与本地数据丢失时的提示方式；
-3. 用真实房源截图验证本地 OCR，失败时保留手动录入路径；
-4. 确定本地存储、图片保存、升级兼容和容量边界；
-5. 建立工程后补充并实际验证启动、测试、lint、typecheck 和 format 命令。
+本地预览默认打开 `http://127.0.0.1:4173/`。
 
-更完整的准备度检查见 [项目上下文](CONTEXT.md#开发前准备度检查)。未经验证的工程命令和技术选择不应写入仓库文档。
+## 验证与构建
+
+```bash
+npm run check:runtime
+npm run lint
+npm run format:check
+npm run typecheck
+npm run test:unit
+npm run test:e2e
+npm run build
+npm run test:sites
+```
+
+静态产物位于 `web_version/dist/client/`；原型没有服务端运行时依赖，当前没有执行正式部署。
