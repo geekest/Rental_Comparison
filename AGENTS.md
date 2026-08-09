@@ -2,16 +2,16 @@
 
 ## 项目概览
 
-本仓库用于建设 `Rental_Comparison` App。当前仅建立工程与文档骨架，具体产品目标以 `docs/product/` 下的产品文档为准。
+本仓库用于建设 `Rental_Comparison` App。当前先通过 `web_version/` 验证手机 Web MVP，具体产品目标以 `docs/product/` 下的产品文档为准。
 
 主要技术栈：
 
-- 目标平台：待确认
-- 开发语言：待确认
-- UI 框架：待确认
-- 数据存储：待确认
-- 测试框架：待确认
-- 构建工具：待确认
+- 目标平台：Web 验证原型；正式产品仍以 iPhone 为目标
+- 开发语言：TypeScript
+- UI 框架：React 19
+- 数据存储：IndexedDB
+- 测试框架：Vitest、Playwright
+- 构建工具：Vite、npm、Biome
 
 ## 目录结构
 
@@ -23,6 +23,7 @@
 - `docs/adr/`：架构决策记录
 - `docs/design/`：设计草图与页面索引
 - `.codex/plans/`：复杂任务的 ExecPlan
+- `web_version/`：手机 Web 验证原型、测试与静态构建
 
 ## 文档权威关系
 
@@ -62,19 +63,19 @@
 
 ## 安装、启动与构建
 
-- 安装依赖：待确认
-- 本地启动：待确认
-- 构建：待确认
-
-在可执行工程文件建立前，不编造或记录未经验证的命令。
+- 安装依赖：`cd web_version && npm ci`
+- 本地启动：`cd web_version && npm run dev`
+- 构建：`cd web_version && npm run build`
 
 ## 测试与验证
 
-- 单元测试：待确认
-- UI 测试：待确认
-- Lint：待确认
-- Typecheck：待确认
-- Format：待确认
+- 单元测试：`cd web_version && npm run test:unit`
+- UI 测试：`cd web_version && npm run test:e2e`
+- 移动运行时：`cd web_version && npm run check:runtime`
+- 静态产物：先运行 `npm run build`，再运行 `npm run test:sites`
+- Lint：`cd web_version && npm run lint`
+- Typecheck：`cd web_version && npm run typecheck`
+- Format：`cd web_version && npm run format:check`
 
 新增功能时，应根据影响范围同步补充测试或记录无法验证的原因。
 
@@ -94,7 +95,7 @@
 
 ## 依赖新增规则
 
-- 当前没有已确认的第三方依赖。
+- Web 原型已确认 React、移动原型运行时和 Tesseract.js 等锁定依赖，具体版本以 `web_version/package-lock.json` 为准。
 - 新增生产依赖前，需要说明用途、替代方案、维护风险和体积影响，并获得确认。
 
 ## 高风险变更
