@@ -373,7 +373,6 @@ function ListingsScreen({
 }) {
   const candidates = state.task.listings.filter((listing) => listing.status === "candidate");
   const eliminated = state.task.listings.filter((listing) => listing.status === "eliminated");
-  const featured = candidates[0];
   return (
     <MobileScroll className="app-screen" key="listings-screen">
       <main className="listings-screen" data-testid="candidate-screen">
@@ -393,6 +392,7 @@ function ListingsScreen({
           {candidates.map((listing) => {
             const costs = calculateCosts(listing, state.task.expectedMonths);
             const unknownCount = costs.unknowns.length;
+            const isCompared = state.task.comparisonIds.includes(listing.id);
             return (
               <article className="listing-card" key={listing.id} data-testid={`listing-card-${listing.id}`}>
                 <button className="card-eliminate" aria-label="淘汰" onClick={() => onEliminate(listing)}>
@@ -440,6 +440,18 @@ function ListingsScreen({
                     )}
                   </div>
                 </button>
+                <div className="card-actions">
+                  <button
+                    className={isCompared ? "primary-button selected" : "primary-button"}
+                    aria-pressed={isCompared}
+                    onClick={() => onCompare(listing.id)}
+                  >
+                    {isCompared ? "已加入对比" : "加入对比"}
+                  </button>
+                  <button className="secondary-button" onClick={() => onOpen("detail", listing.id)}>
+                    查看详情
+                  </button>
+                </div>
               </article>
             );
           })}
@@ -457,19 +469,6 @@ function ListingsScreen({
           <i />
           <i />
         </div>
-        {featured ? (
-          <div className="gallery-actions">
-            <button
-              className={state.task.comparisonIds.includes(featured.id) ? "primary-button selected" : "primary-button"}
-              onClick={() => onCompare(featured.id)}
-            >
-              {state.task.comparisonIds.includes(featured.id) ? "已加入对比" : "加入对比"}
-            </button>
-            <button className="secondary-button" onClick={() => onOpen("detail", featured.id)}>
-              查看详情
-            </button>
-          </div>
-        ) : null}
         <button className="disclosure-card" onClick={() => onOpen("manage")}>
           <span>
             <strong>查看真实成本与条件</strong>
@@ -498,9 +497,14 @@ function ListingsScreen({
               <button key={listing.id} onClick={() => onEliminate(listing)}>
                 <span>
                   <strong>{listing.name}</strong>
-                  <small>¥{listing.rent.toLocaleString("zh-CN")} / 月</small>
+                  <small>
+                    ¥{listing.rent.toLocaleString("zh-CN")} / 月
+                    {listing.eliminationReason ? ` · ${listing.eliminationReason}` : ""}
+                  </small>
                 </span>
-                <ResetIcon /> 恢复
+                <span className="restore-action">
+                  <ResetIcon /> 恢复
+                </span>
               </button>
             ))}
           </section>
@@ -1405,7 +1409,7 @@ function CompareManager({
                 className={state.task.baselineId === listing.id ? "baseline active" : "baseline"}
                 onClick={() => updateTask((task) => ({ ...task, baselineId: listing.id }))}
               >
-                {state.task.baselineId === listing.id ? "基准" : "设为基准"}
+                {state.task.baselineId === listing.id ? "基准" : "设为比较基准"}
               </button>
             ) : null}
           </div>

@@ -40,6 +40,9 @@ button {
   min-height: 100%;
   padding-bottom: calc(var(--mobile-safe-area-height) + 126px);
 }
+.listings-screen {
+  background: var(--surface);
+}
 .eyebrow {
   margin: 0 0 6px;
   color: var(--blue);
@@ -89,7 +92,7 @@ button {
 }
 .listing-track {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 16px;
   padding: 0 24px;
 }
@@ -99,7 +102,7 @@ button {
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.94);
+  background: var(--surface);
   box-shadow: 0 20px 55px rgba(35, 49, 85, 0.1);
 }
 .card-eliminate {
@@ -218,7 +221,7 @@ button {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  padding: 8px 14px;
+  padding: 8px 14px 14px;
 }
 .primary-button,
 .secondary-button,
@@ -237,8 +240,8 @@ button {
   background: linear-gradient(135deg, #0786ff, #0868f8);
 }
 .primary-button.selected {
-  color: var(--blue);
-  background: var(--blue-soft);
+  color: var(--secondary);
+  background: var(--grouped);
 }
 .secondary-button {
   color: var(--blue);
@@ -259,12 +262,12 @@ button {
   font-size: 12px;
 }
 .add-card {
-  flex: 0 0 210px;
-  min-height: 420px;
+  flex: 0 0 159px;
+  min-height: 0;
   margin-right: 24px;
   border: 1px dashed #c8cad2;
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.65);
+  background: var(--surface);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -293,12 +296,6 @@ button {
   justify-content: center;
   gap: 10px;
   padding: 14px 0;
-}
-.gallery-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 0 42px 14px;
 }
 .page-dots i {
   width: 7px;
@@ -372,6 +369,26 @@ button {
 }
 .eliminated button span {
   color: var(--ink);
+}
+.eliminated button > span:first-child {
+  min-width: 0;
+  flex: 1;
+}
+.eliminated button > span:first-child small {
+  overflow-wrap: anywhere;
+}
+.eliminated .restore-action {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  margin-left: 16px;
+  color: var(--blue);
+  white-space: nowrap;
+}
+.eliminated .restore-action svg {
+  width: 16px;
+  height: 16px;
 }
 
 .bottom-nav {
@@ -1256,6 +1273,9 @@ button {
 @media (max-width: 380px) {
   .listing-card {
     flex-basis: 300px;
+  }
+  .add-card {
+    flex-basis: 150px;
   }
   .hero-header h1 {
     font-size: 31px;

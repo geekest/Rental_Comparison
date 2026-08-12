@@ -12,6 +12,7 @@ Rental Comparison 不提供房源供给，也不替用户计算“最佳房源�
 - 已支持录入、比较、重点考虑、淘汰与恢复、最终确认和撤回；
 - Web 原型采用 React、TypeScript、Vite、IndexedDB 和浏览器本地 OCR；
 - 没有账户、业务服务器、云同步或行为埋点；
+- 核心决策闭环已有自动化验证，完整字段和真机差距单独记录，不以“已实现 MVP”掩盖剩余范围；
 - Web 验证达到门槛并完成流程修正后，再评估原生 iPhone TestFlight 版本。
 
 ## 核心流程
@@ -98,3 +99,5 @@ npm run test:sites
 ```
 
 静态产物位于 `web_version/dist/client/`；原型没有服务端运行时依赖，当前没有执行正式部署。
+
+当前代码覆盖范围和下一轮候选缺口见[核心流程规格的实现状态](docs/specs/spec_001_core_flow.md#当前-web-实现状态)。
