@@ -122,13 +122,23 @@ button {
 }
 .card-main {
   width: 100%;
+}
+.card-detail-button {
+  width: 100%;
   padding: 0;
   border: 0;
   background: transparent;
   text-align: left;
 }
-.card-main > img {
+.listing-media-carousel {
   width: 100%;
+}
+.listing-media-track {
+  display: flex;
+}
+.listing-media-image {
+  flex: 0 0 318px;
+  width: 318px;
   height: 220px;
   object-fit: cover;
   display: block;
@@ -190,6 +200,18 @@ button {
   box-sizing: content-box;
   border-radius: 50%;
   background: var(--grouped);
+}
+.card-facts .fact-icon {
+  width: 18px;
+  height: 18px;
+  padding: 3px;
+  border-radius: 50%;
+  background: var(--grouped);
+  color: var(--secondary);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 12px;
+  text-align: center;
 }
 .card-facts dt {
   color: var(--secondary);
@@ -1273,6 +1295,10 @@ button {
 @media (max-width: 380px) {
   .listing-card {
     flex-basis: 300px;
+  }
+  .listing-media-image {
+    flex-basis: 300px;
+    width: 300px;
   }
   .add-card {
     flex-basis: 150px;
