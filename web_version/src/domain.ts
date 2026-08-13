@@ -1,5 +1,6 @@
 export type ListingStatus = "candidate" | "eliminated";
 export type RentalType = "entire" | "shared";
+export type CommuteMode = "subway" | "walking" | "driving";
 export type Importance = "required" | "preferred" | "ignored";
 export type ConditionResult = "met" | "conflict" | "unknown";
 export type InspectionState = "unchecked" | "okay" | "issue";
@@ -58,14 +59,25 @@ export interface Listing {
   availableDate?: string;
   leaseMonths?: number;
   paymentCadence?: "monthly" | "quarterly" | "semiAnnual" | "annual";
+  roomCount?: number;
   commuteMinutes?: number;
   commuteFare?: number;
+  commuteMode?: CommuteMode;
   imageUrl?: string;
   screenshotId?: string;
+  photoIds?: string[];
   costs: CostItem[];
   conditionResults: Record<string, ConditionResult>;
   inspections: InspectionItem[];
 }
+
+export const commuteModeLabels: Record<CommuteMode, string> = {
+  subway: "地铁",
+  walking: "步行",
+  driving: "开车",
+};
+
+export const formatCommuteMode = (mode?: CommuteMode) => (mode ? commuteModeLabels[mode] : "方式待补充");
 
 export interface DecisionEvent {
   id: string;
@@ -173,8 +185,11 @@ export const initialState: AppState = {
         area: 48,
         areaScope: "whole",
         layout: "1 室 1 厅",
+        floor: "8 / 18 层",
+        roomCount: 1,
         commuteMinutes: 32,
         commuteFare: 6,
+        commuteMode: "subway",
         imageUrl: "/assets/listings/xuhui.png",
         costs: [
           { id: "x-service", name: "物业与网络", amount: 450, cadence: "monthly", refundable: false, confirmed: true },
@@ -206,8 +221,11 @@ export const initialState: AppState = {
         area: 18,
         areaScope: "private",
         layout: "合租独立卧室",
+        floor: "12 / 28 层",
+        roomCount: 3,
         commuteMinutes: 14,
         commuteFare: 3,
+        commuteMode: "walking",
         imageUrl: "/assets/listings/jingan.png",
         costs: [
           { id: "j-service", name: "服务与网络", amount: 180, cadence: "monthly", refundable: false, confirmed: true },
@@ -231,8 +249,11 @@ export const initialState: AppState = {
         area: 32,
         areaScope: "whole",
         layout: "开间",
+        floor: "3 / 6 层",
+        roomCount: 1,
         commuteMinutes: 46,
         commuteFare: 7,
+        commuteMode: "driving",
         imageUrl: "/assets/listings/putuo.png",
         costs: [
           { id: "p-service", name: "物业费", amount: 280, cadence: "monthly", refundable: false, confirmed: true },
@@ -258,6 +279,7 @@ export const createListing = (
   id: crypto.randomUUID(),
   status: "candidate",
   focused: false,
+  photoIds: [],
   costs: [],
   conditionResults: {},
   inspections: makeInspectionItems(),
@@ -267,6 +289,7 @@ function normalizeListing(listing: Listing): Listing {
   return {
     ...listing,
     currency: listing.currency || "CNY",
+    photoIds: listing.photoIds ?? [],
     costs: (listing.costs ?? []).map((cost) => ({
       ...cost,
       cadence: cost.cadence ?? "monthly",
