@@ -601,6 +601,29 @@ function CompareScreen({
   onFinal: () => void;
   onReplace: () => void;
 }) {
+  useEffect(() => {
+    if (listings.length < 2) return;
+
+    const screen = document.querySelector<HTMLElement>('[data-testid="device-screen"]');
+    if (!screen) return;
+
+    const updateActiveSection = () => {
+      const screenTop = screen.getBoundingClientRect().top;
+      const active = (["cost", "commute", "conditions", "inspection"] as const).reduce<CompareSection>(
+        (current, id) => {
+          const target = document.getElementById(`compare-section-${id}`);
+          return target && target.getBoundingClientRect().top - screenTop <= 120 ? id : current;
+        },
+        "cost",
+      );
+      onSection(active);
+    };
+
+    screen.addEventListener("scroll", updateActiveSection, { passive: true });
+    updateActiveSection();
+    return () => screen.removeEventListener("scroll", updateActiveSection);
+  }, [listings.length, onSection]);
+
   if (listings.length < 2)
     return (
       <MobileScroll className="app-screen" key="compare-empty-screen">
@@ -617,6 +640,7 @@ function CompareScreen({
       </MobileScroll>
     );
   const baseline = state.task.baselineId;
+
   return (
     <MobileScroll className="app-screen" key="compare-screen">
       <main className="compare-screen" data-testid="compare-screen">
@@ -637,7 +661,7 @@ function CompareScreen({
             </article>
           ))}
         </Carousel>
-        <div className="segment-control" role="tablist">
+        <nav className="compare-anchor-nav" aria-label="比较模块快速定位">
           {(
             [
               ["cost", "成本"],
@@ -646,12 +670,33 @@ function CompareScreen({
               ["inspection", "看房"],
             ] as const
           ).map(([id, label]) => (
-            <button key={id} className={section === id ? "active" : ""} onClick={() => onSection(id)}>
+            <button
+              key={id}
+              aria-controls={`compare-section-${id}`}
+              aria-current={section === id ? "location" : undefined}
+              className={section === id ? "active" : ""}
+              onClick={() => {
+                const screen = document.querySelector<HTMLElement>('[data-testid="device-screen"]');
+                const target = document.getElementById(`compare-section-${id}`);
+                if (screen && target) {
+                  screen.scrollTo({
+                    top: Math.max(
+                      0,
+                      target.getBoundingClientRect().top - screen.getBoundingClientRect().top + screen.scrollTop - 68,
+                    ),
+                    behavior: "smooth",
+                  });
+                }
+                onSection(id);
+              }}
+            >
               {label}
             </button>
           ))}
-        </div>
-        <CompareSectionContent task={state.task} listings={listings} section={section} />
+        </nav>
+        {(["cost", "commute", "conditions", "inspection"] as const).map((id) => (
+          <CompareSectionContent key={id} task={state.task} listings={listings} section={id} />
+        ))}
         <section className="no-score">
           <QuestionMarkCircledIcon />
           <p>
@@ -679,8 +724,13 @@ function CompareSectionContent({
 }) {
   if (section === "cost")
     return (
-      <section className="comparison-section">
-        <SectionTitle icon={<GearIcon />} title="费用" subtitle="月租与固定费用的月均支出" />
+      <section className="comparison-section" id="compare-section-cost" aria-labelledby="compare-section-cost-title">
+        <SectionTitle
+          id="compare-section-cost-title"
+          icon={<GearIcon />}
+          title="真实成本"
+          subtitle="月租与固定费用的月均支出"
+        />
         <MetricRail
           listings={listings}
           render={(listing) => {
@@ -700,7 +750,7 @@ function CompareSectionContent({
         <DifferenceNote
           listings={listings}
           values={listings.map((listing) => calculateCosts(listing, task.expectedMonths).monthlyHousing)}
-          unit="元 / 月"
+          currency={listings[0]?.currency}
         />
         <DetailRows
           labels={["月租", "月均固定费用", "不退一次性费用月均摊销", "押金与其他一次性费用"]}
@@ -719,8 +769,17 @@ function CompareSectionContent({
     );
   if (section === "commute")
     return (
-      <section className="comparison-section">
-        <SectionTitle icon={<ClockIcon />} title="通勤" subtitle={`单程到 ${task.commuteDestination}，支出单独显示`} />
+      <section
+        className="comparison-section"
+        id="compare-section-commute"
+        aria-labelledby="compare-section-commute-title"
+      >
+        <SectionTitle
+          id="compare-section-commute-title"
+          icon={<ClockIcon />}
+          title="通勤"
+          subtitle={`单程到 ${task.commuteDestination}，支出单独显示`}
+        />
         <MetricRail
           listings={listings}
           render={(listing) => (
@@ -744,12 +803,25 @@ function CompareSectionContent({
     );
   if (section === "conditions")
     return (
-      <section className="comparison-section">
-        <SectionTitle icon={<CheckCircledIcon />} title="条件" subtitle="先显示硬性冲突与未知" />
+      <section
+        className="comparison-section"
+        id="compare-section-conditions"
+        aria-labelledby="compare-section-conditions-title"
+      >
+        <SectionTitle
+          id="compare-section-conditions-title"
+          icon={<CheckCircledIcon />}
+          title="条件"
+          subtitle="先显示硬性冲突与未知"
+        />
         {task.conditions
           .filter((condition) => condition.importance !== "ignored")
           .map((condition) => (
-            <div className="condition-row" key={condition.id}>
+            <div
+              className="condition-row"
+              key={condition.id}
+              style={{ "--comparison-column-count": listings.length } as React.CSSProperties}
+            >
               <div>
                 <strong>{condition.name}</strong>
                 <small>{condition.importance === "required" ? "硬性条件" : "偏好条件"}</small>
@@ -764,32 +836,53 @@ function CompareSectionContent({
       </section>
     );
   return (
-    <section className="comparison-section">
-      <SectionTitle icon={<ExclamationTriangleIcon />} title="看房异常" subtitle="只记录发现的问题，未记录不代表正常" />
-      {listings.map((listing) => {
-        const issues = getInspectionIssues(listing);
-        return (
-          <article className="inspection-summary" key={listing.id}>
-            <strong>{listing.name}</strong>
-            <span>{issues.length ? `${issues.length} 个已记录问题` : "暂无已记录问题"}</span>
-            {issues.map((issue) => (
-              <p key={issue.id}>
-                <ExclamationTriangleIcon /> {issue.name}
-                {issue.note ? `：${issue.note}` : ""}
-              </p>
-            ))}
-          </article>
-        );
-      })}
+    <section
+      className="comparison-section"
+      id="compare-section-inspection"
+      aria-labelledby="compare-section-inspection-title"
+    >
+      <SectionTitle
+        id="compare-section-inspection-title"
+        icon={<ExclamationTriangleIcon />}
+        title="看房异常"
+        subtitle="只记录发现的问题，未记录不代表正常"
+      />
+      <MetricRail
+        listings={listings}
+        cardClassName="inspection-card"
+        render={(listing) => {
+          const issues = getInspectionIssues(listing);
+          return (
+            <>
+              <strong>{issues.length ? `${issues.length} 项` : "暂无"}</strong>
+              <span>{issues.length ? "已记录问题" : "已检查项目未发现异常"}</span>
+              {issues.map((issue) => (
+                <p key={issue.id}>
+                  <ExclamationTriangleIcon /> {issue.name}
+                  {issue.note ? `：${issue.note}` : ""}
+                </p>
+              ))}
+            </>
+          );
+        }}
+      />
     </section>
   );
 }
 
-function MetricRail({ listings, render }: { listings: Listing[]; render: (listing: Listing) => React.ReactNode }) {
+function MetricRail({
+  listings,
+  render,
+  cardClassName = "",
+}: {
+  listings: Listing[];
+  render: (listing: Listing) => React.ReactNode;
+  cardClassName?: string;
+}) {
   return (
     <Carousel className="metric-carousel" contentClassName="metric-track" ariaLabel="指标对比">
       {listings.map((listing) => (
-        <article className="metric-card" key={listing.id}>
+        <article className={`metric-card ${cardClassName}`} key={listing.id}>
           {render(listing)}
         </article>
       ))}
@@ -800,10 +893,12 @@ function DifferenceNote({
   listings,
   values,
   unit,
+  currency,
 }: {
   listings: Listing[];
   values: (number | undefined)[];
-  unit: string;
+  unit?: string;
+  currency?: string;
 }) {
   if (new Set(listings.map((listing) => listing.currency)).size > 1) {
     return <p className="difference-note">货币不同，暂不直接比较。</p>;
@@ -815,7 +910,8 @@ function DifferenceNote({
   const winner = listings[values.indexOf(min)];
   return (
     <p className="difference-note">
-      {winner.name} 此项少 {Math.round(max - min).toLocaleString("zh-CN")} {unit}
+      {winner.name} 此项少 {currency ? formatMoney(max - min, currency) : Math.round(max - min).toLocaleString("zh-CN")}
+      {currency ? " / 月" : ` ${unit}`}
     </p>
   );
 }
@@ -829,7 +925,7 @@ function DetailRows({
   values: (listing: Listing) => string[];
 }) {
   return (
-    <div className="detail-table">
+    <div className="detail-table" style={{ "--comparison-column-count": listings.length } as React.CSSProperties}>
       {labels.map((label, index) => (
         <div className="detail-row" key={label}>
           <strong>{label}</strong>
@@ -841,12 +937,22 @@ function DetailRows({
     </div>
   );
 }
-function SectionTitle({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: string }) {
+function SectionTitle({
+  id,
+  icon,
+  title,
+  subtitle,
+}: {
+  id: string;
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+}) {
   return (
     <header className="section-title">
       <span>{icon}</span>
       <div>
-        <h2>{title}</h2>
+        <h2 id={id}>{title}</h2>
         <p>{subtitle}</p>
       </div>
     </header>
