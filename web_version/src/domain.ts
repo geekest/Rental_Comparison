@@ -3,12 +3,18 @@ export type RentalType = "entire" | "shared";
 export type Importance = "required" | "preferred" | "ignored";
 export type ConditionResult = "met" | "conflict" | "unknown";
 export type InspectionState = "unchecked" | "okay" | "issue";
+export type CostCadence = "daily" | "monthly" | "quarterly" | "semiAnnual" | "annual" | "oneTime";
+
+export interface LocationPoint {
+  latitude: number;
+  longitude: number;
+}
 
 export interface CostItem {
   id: string;
   name: string;
   amount?: number;
-  cadence: "monthly" | "oneTime";
+  cadence: CostCadence;
   refundable: boolean;
   confirmed: boolean;
 }
@@ -37,15 +43,21 @@ export interface Listing {
   rentalType: RentalType;
   rent: number;
   prepaidRentMonths?: number;
-  currency: "CNY";
+  currency: string;
   status: ListingStatus;
   focused: boolean;
   eliminationReason?: string;
   address?: string;
+  location?: LocationPoint;
   sourceUrl?: string;
   area?: number;
   areaScope?: "whole" | "private";
   layout?: string;
+  floor?: string;
+  hasElevator?: boolean;
+  availableDate?: string;
+  leaseMonths?: number;
+  paymentCadence?: "monthly" | "quarterly" | "semiAnnual" | "annual";
   commuteMinutes?: number;
   commuteFare?: number;
   imageUrl?: string;
@@ -68,7 +80,7 @@ export interface RentalTask {
   title: string;
   city: string;
   regionTemplate: "mainland-cn";
-  currency: "CNY";
+  currency: string;
   areaUnit: "sqm";
   expectedMonths: number;
   commuteDestination: string;
@@ -251,6 +263,26 @@ export const createListing = (
   inspections: makeInspectionItems(),
 });
 
+function normalizeListing(listing: Listing): Listing {
+  return {
+    ...listing,
+    currency: listing.currency || "CNY",
+    costs: (listing.costs ?? []).map((cost) => ({
+      ...cost,
+      cadence: cost.cadence ?? "monthly",
+      refundable: Boolean(cost.refundable),
+      confirmed: Boolean(cost.confirmed),
+    })),
+    conditionResults: listing.conditionResults ?? {},
+    inspections: (listing.inspections ?? makeInspectionItems()).map((inspection) => ({
+      ...inspection,
+      state: inspection.state ?? "unchecked",
+      note: inspection.note ?? "",
+      photoIds: inspection.photoIds ?? [],
+    })),
+  };
+}
+
 const defaultConditions = (): ConditionDefinition[] => [
   { id: "budget", name: "月均居住成本不超过预算", importance: "required" },
   { id: "move-in", name: "在最晚日期前可入住", importance: "required" },
@@ -291,17 +323,24 @@ export function getComparisonListings(task: RentalTask): Listing[] {
 }
 
 export function normalizeTask(task: RentalTask): RentalTask {
-  const candidates = task.listings.filter((listing) => listing.status === "candidate");
+  const listings = task.listings.map(normalizeListing);
+  const candidates = listings.filter((listing) => listing.status === "candidate");
   const candidateIds = new Set(candidates.map((listing) => listing.id));
   const comparisonIds = task.comparisonIds.filter((id) => candidateIds.has(id)).slice(0, 5);
   const baselineId = task.baselineId && comparisonIds.includes(task.baselineId) ? task.baselineId : comparisonIds[0];
   const finalStillExists = task.finalListingId && candidateIds.has(task.finalListingId);
   return {
     ...task,
+    currency: task.currency || "CNY",
+    listings,
     comparisonIds,
     baselineId,
     finalListingId: finalStillExists ? task.finalListingId : undefined,
     finalReason: finalStillExists ? task.finalReason : undefined,
     completed: Boolean(finalStillExists && task.completed),
   };
+}
+
+export function normalizeAppState(state: AppState): AppState {
+  return { ...state, task: normalizeTask(state.task) };
 }

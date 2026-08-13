@@ -27,6 +27,8 @@ import {
   type InspectionState,
   initialState,
   type Listing,
+  type LocationPoint,
+  normalizeAppState,
   normalizeTask,
 } from "./domain";
 import { BottomSheet, Carousel, KeyboardInput, KeyboardTextarea, MobileScroll, useKeyboard } from "./mobile";
@@ -54,7 +56,7 @@ export default function Prototype() {
   useEffect(() => {
     loadState()
       .then((saved) => {
-        if (saved) setState(saved);
+        if (saved) setState(normalizeAppState(saved));
         setReady(true);
       })
       .catch(() => setReady(true));
@@ -247,7 +249,7 @@ export default function Prototype() {
         open={sheet === "add"}
         onOpenChange={(open) => !open && setSheet(null)}
         title="添加租赁方案"
-        description="先保存 5 个必要字段，其他信息之后再补。"
+        description="先填写主要信息；需要时再展开补充内容，保存前都可修改。"
         snap={0.9}
       >
         <AddListingForm
@@ -255,7 +257,8 @@ export default function Prototype() {
           onSave={(listing) => {
             updateTask((task) => ({ ...task, listings: [...task.listings, listing] }));
             setSelectedId(listing.id);
-            setSheet("detail");
+            setSheet(null);
+            setToast("房源已保存，可随时补充信息");
           }}
         />
       </BottomSheet>
@@ -269,7 +272,6 @@ export default function Prototype() {
       >
         {selected ? (
           <ListingEditor
-            task={state.task}
             listing={selected}
             onChange={(patch) => setListing(selected.id, patch)}
             onToggleFocus={() => toggleFocus(selected)}
@@ -410,7 +412,7 @@ function ListingsScreen({
                       ) : null}
                     </div>
                     <p className="rent">
-                      <span>¥</span> {listing.rent.toLocaleString("zh-CN")}
+                      {formatMoney(listing.rent, listing.currency)}
                       <small> / 月</small>
                     </p>
                     <dl className="card-facts">
@@ -471,7 +473,7 @@ function ListingsScreen({
         </div>
         <button className="disclosure-card" onClick={() => onOpen("manage")}>
           <span>
-            <strong>查看真实成本与条件</strong>
+            <strong>查看费用与条件</strong>
             <small>
               {state.task.comparisonIds.length >= 2
                 ? `已选择 ${state.task.comparisonIds.length} 套，可开始比较`
@@ -498,7 +500,7 @@ function ListingsScreen({
                 <span>
                   <strong>{listing.name}</strong>
                   <small>
-                    ¥{listing.rent.toLocaleString("zh-CN")} / 月
+                    {formatMoney(listing.rent, listing.currency)} / 月
                     {listing.eliminationReason ? ` · ${listing.eliminationReason}` : ""}
                   </small>
                 </span>
@@ -610,7 +612,7 @@ function CompareSectionContent({
   if (section === "cost")
     return (
       <section className="comparison-section">
-        <SectionTitle icon={<GearIcon />} title="真实成本" subtitle="月租与固定费用的月均支出" />
+        <SectionTitle icon={<GearIcon />} title="费用" subtitle="月租与固定费用的月均支出" />
         <MetricRail
           listings={listings}
           render={(listing) => {
@@ -618,10 +620,10 @@ function CompareSectionContent({
             return (
               <>
                 <strong>
-                  {formatMoney(cost.monthlyHousing)}
+                  {formatMoney(cost.monthlyHousing, listing.currency)}
                   <small> / 月</small>
                 </strong>
-                <span>首期现金 {formatMoney(cost.firstCash)}</span>
+                <span>首期现金 {formatMoney(cost.firstCash, listing.currency)}</span>
                 <em>{cost.unknowns.length ? `${cost.unknowns.length} 项费用未知` : "费用均已确认"}</em>
               </>
             );
@@ -633,16 +635,15 @@ function CompareSectionContent({
           unit="元 / 月"
         />
         <DetailRows
-          labels={["月租", "月均固定费用", "不退一次性费用月均摊销", "首期预付租金", "押金与一次性费用"]}
+          labels={["月租", "月均固定费用", "不退一次性费用月均摊销", "押金与其他一次性费用"]}
           listings={listings}
           values={(listing) => {
             const cost = calculateCosts(listing, task.expectedMonths);
             return [
-              formatMoney(listing.rent),
-              formatMoney(cost.monthlyFees),
-              `${formatMoney(cost.amortizedOneTime)}（按 ${task.expectedMonths} 个月）`,
-              formatMoney(cost.prepaidRent),
-              formatMoney(cost.firstCashExtras),
+              formatMoney(listing.rent, listing.currency),
+              formatMoney(cost.monthlyFees, listing.currency),
+              `${formatMoney(cost.amortizedOneTime, listing.currency)}（按 ${task.expectedMonths} 个月）`,
+              formatMoney(cost.firstCashExtras, listing.currency),
             ];
           }}
         />
@@ -660,7 +661,10 @@ function CompareSectionContent({
                 {listing.commuteMinutes ?? "?"}
                 <small> 分钟</small>
               </strong>
-              <span>单次支出 {listing.commuteFare === undefined ? "未知" : formatMoney(listing.commuteFare)}</span>
+              <span>
+                单次支出{" "}
+                {listing.commuteFare === undefined ? "未知" : formatMoney(listing.commuteFare, listing.currency)}
+              </span>
               <em>
                 {listing.commuteMinutes && listing.commuteMinutes > 40 ? "超过 40 分钟硬性条件" : "通勤条件无已知冲突"}
               </em>
@@ -733,6 +737,9 @@ function DifferenceNote({
   values: (number | undefined)[];
   unit: string;
 }) {
+  if (new Set(listings.map((listing) => listing.currency)).size > 1) {
+    return <p className="difference-note">货币不同，暂不直接比较。</p>;
+  }
   const known = values.filter((value): value is number => value !== undefined);
   if (known.length < 2) return <p className="difference-note">存在未知信息，暂不能计算差异。</p>;
   const min = Math.min(...known);
@@ -880,11 +887,218 @@ function ConditionsScreen({
   );
 }
 
+const mapZoom = 14;
+const mapTileSize = 256;
+const mapWidth = 296;
+const mapHeight = 184;
+const defaultMapLocation: LocationPoint = { latitude: 31.2304, longitude: 121.4737 };
+
+const costCadenceLabel = (cadence: Listing["costs"][number]["cadence"]) =>
+  ({ daily: "每日", monthly: "每月", quarterly: "每季度", semiAnnual: "每半年", annual: "每年", oneTime: "一次性" })[
+    cadence
+  ];
+
+const costCadenceOptions = () => (
+  <>
+    <option value="daily">每日</option>
+    <option value="monthly">每月</option>
+    <option value="quarterly">每季度</option>
+    <option value="semiAnnual">每半年</option>
+    <option value="annual">每年</option>
+    <option value="oneTime">一次性</option>
+  </>
+);
+
+function toMapPoint(location: LocationPoint) {
+  const scale = mapTileSize * 2 ** mapZoom;
+  const sinLatitude = Math.sin((location.latitude * Math.PI) / 180);
+  return {
+    x: ((location.longitude + 180) / 360) * scale,
+    y: (0.5 - Math.log((1 + sinLatitude) / (1 - sinLatitude)) / (4 * Math.PI)) * scale,
+  };
+}
+
+function fromMapPoint(x: number, y: number): LocationPoint {
+  const scale = mapTileSize * 2 ** mapZoom;
+  const longitude = (x / scale) * 360 - 180;
+  const latitude = (Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / scale))) * 180) / Math.PI;
+  return { latitude: Math.max(-85, Math.min(85, latitude)), longitude };
+}
+
+function LocationFields({
+  address,
+  location,
+  onChange,
+}: {
+  address: string;
+  location?: LocationPoint;
+  onChange: (patch: { address?: string; location?: LocationPoint }) => void;
+}) {
+  const [query, setQuery] = useState(address);
+  const [results, setResults] = useState<Array<{ display_name: string; lat: string; lon: string }>>([]);
+  const [status, setStatus] = useState("");
+  const center = location ?? defaultMapLocation;
+  const mapPoint = toMapPoint(center);
+  const left = mapPoint.x - mapWidth / 2;
+  const top = mapPoint.y - mapHeight / 2;
+  const minTileX = Math.floor(left / mapTileSize);
+  const minTileY = Math.floor(top / mapTileSize);
+  const tileLimit = 2 ** mapZoom;
+  const choose = async (nextLocation: LocationPoint, nextAddress?: string) => {
+    onChange({ location: nextLocation, address: nextAddress });
+    if (nextAddress) {
+      setQuery(nextAddress);
+      return;
+    }
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${nextLocation.latitude}&lon=${nextLocation.longitude}`,
+        { headers: { Accept: "application/json" } },
+      );
+      const data = (await response.json()) as { display_name?: string };
+      if (data.display_name) {
+        onChange({ address: data.display_name });
+        setQuery(data.display_name);
+      }
+    } catch {
+      setStatus("已选中坐标；地址可手动填写");
+    }
+  };
+  const search = async () => {
+    if (!query.trim()) return;
+    setStatus("正在搜索地图位置…");
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=${encodeURIComponent(query)}`,
+        {
+          headers: { Accept: "application/json" },
+        },
+      );
+      const data = (await response.json()) as Array<{ display_name: string; lat: string; lon: string }>;
+      setResults(data);
+      setStatus(data.length ? "请选择搜索结果，或直接在地图上选点" : "未找到位置，请修改关键词或手动填写");
+    } catch {
+      setStatus("地图搜索暂不可用，请手动填写地址或在地图选点");
+    }
+  };
+  const locate = () => {
+    if (!navigator.geolocation) {
+      setStatus("当前浏览器不支持定位，请搜索或选点");
+      return;
+    }
+    setStatus("正在请求定位权限…");
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setStatus("已定位，请确认地图上的位置");
+        void choose({ latitude: coords.latitude, longitude: coords.longitude });
+      },
+      () => setStatus("未获得定位权限，请搜索或选点"),
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+  };
+  return (
+    <section className="location-fields">
+      <h3>房屋位置</h3>
+      <Field label="地址（可未知）">
+        <KeyboardInput
+          value={address}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            onChange({ address: event.target.value });
+          }}
+          placeholder="搜索位置或手动填写"
+        />
+      </Field>
+      <div className="map-actions">
+        <button type="button" className="outline-button" onClick={locate}>
+          使用当前位置
+        </button>
+        <button type="button" className="outline-button" onClick={() => void search()}>
+          搜索地图
+        </button>
+      </div>
+      <button
+        type="button"
+        className="map-picker"
+        data-testid="map-picker"
+        aria-label="在地图上选择房屋位置"
+        onClick={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect();
+          const next = fromMapPoint(left + event.clientX - rect.left, top + event.clientY - rect.top);
+          setStatus("已选点，正在匹配地址…");
+          void choose(next);
+        }}
+      >
+        {[-1, 0, 1].flatMap((row) =>
+          [-1, 0, 1].map((column) => {
+            const tileX = minTileX + column + 1;
+            const tileY = minTileY + row + 1;
+            if (tileY < 0 || tileY >= tileLimit) return null;
+            const wrappedX = ((tileX % tileLimit) + tileLimit) % tileLimit;
+            return (
+              <img
+                key={`${tileX}-${tileY}`}
+                draggable={false}
+                alt=""
+                src={`https://tile.openstreetmap.org/${mapZoom}/${wrappedX}/${tileY}.png`}
+                style={{ left: tileX * mapTileSize - left, top: tileY * mapTileSize - top }}
+              />
+            );
+          }),
+        )}
+        <span className="map-pin" aria-hidden="true">
+          ●
+        </span>
+      </button>
+      <small className="map-help">
+        {status ||
+          (location
+            ? `已选坐标：${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`
+            : "点击地图即可确认房屋位置")}
+        ；地图搜索和地址匹配会连接 OpenStreetMap 服务。
+      </small>
+      {results.length ? (
+        <div className="map-results">
+          {results.map((result) => (
+            <button
+              type="button"
+              key={`${result.lat}-${result.lon}`}
+              onClick={() => {
+                void choose({ latitude: Number(result.lat), longitude: Number(result.lon) }, result.display_name);
+                setResults([]);
+              }}
+            >
+              {result.display_name}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function AddListingForm({ city, onSave }: { city: string; onSave: (listing: Listing) => void }) {
   const [name, setName] = useState("");
   const [listingCity, setListingCity] = useState(city);
   const [rentalType, setRentalType] = useState<Listing["rentalType"]>("entire");
   const [rent, setRent] = useState("");
+  const [currency, setCurrency] = useState("CNY");
+  const [address, setAddress] = useState("");
+  const [location, setLocation] = useState<LocationPoint>();
+  const [area, setArea] = useState("");
+  const [layout, setLayout] = useState("");
+  const [floor, setFloor] = useState("");
+  const [hasElevator, setHasElevator] = useState<Listing["hasElevator"]>();
+  const [availableDate, setAvailableDate] = useState("");
+  const [leaseMonths, setLeaseMonths] = useState("");
+  const [paymentCadence, setPaymentCadence] = useState<Listing["paymentCadence"]>();
+  const [deposit, setDeposit] = useState("");
+  const [depositRefundable, setDepositRefundable] = useState(true);
+  const [costs, setCosts] = useState<Listing["costs"]>([]);
+  const [costName, setCostName] = useState("");
+  const [costAmount, setCostAmount] = useState("");
+  const [costCadence, setCostCadence] = useState<Listing["costs"][number]["cadence"]>("monthly");
+  const [expanded, setExpanded] = useState(false);
   const [screenshotId, setScreenshotId] = useState<string>();
   const [ocr, setOcr] = useState<OcrSuggestion>();
   const [ocrStatus, setOcrStatus] = useState("");
@@ -908,6 +1122,47 @@ function AddListingForm({ city, onSave }: { city: string; onSave: (listing: List
       setOcrStatus("未能识别，截图已绑定，请手动填写");
     }
   };
+  const applyOcr = () => {
+    if (!ocr) return;
+    if (ocr.city) setListingCity(ocr.city);
+    if (ocr.rent) setRent(String(ocr.rent));
+    if (ocr.currency) setCurrency(ocr.currency);
+    if (ocr.address) setAddress(ocr.address);
+    if (ocr.area) setArea(String(ocr.area));
+    if (ocr.layout) setLayout(ocr.layout);
+    if (ocr.floor) setFloor(ocr.floor);
+    if (ocr.hasElevator !== undefined) setHasElevator(ocr.hasElevator);
+    if (ocr.availableDate) setAvailableDate(ocr.availableDate);
+    if (ocr.leaseMonths) setLeaseMonths(String(ocr.leaseMonths));
+    if (ocr.paymentCadence) setPaymentCadence(ocr.paymentCadence);
+    const recognizedDeposit = ocr.costs.find((cost) => cost.name === "押金");
+    if (recognizedDeposit?.amount !== undefined) setDeposit(String(recognizedDeposit.amount));
+    setCosts(
+      ocr.costs
+        .filter((cost) => cost.name !== "押金")
+        .map((cost) => ({ ...cost, id: crypto.randomUUID(), confirmed: true })),
+    );
+    setExpanded(true);
+    setOcrStatus("已填入可识别字段，请逐项确认或修改后保存");
+  };
+  const addCost = () => {
+    const parsedAmount = Number(costAmount);
+    if (!costName.trim() || !Number.isFinite(parsedAmount) || parsedAmount < 0) return;
+    setCosts((current) => [
+      ...current,
+      {
+        id: crypto.randomUUID(),
+        name: costName.trim(),
+        amount: parsedAmount,
+        cadence: costCadence,
+        refundable: false,
+        confirmed: true,
+      },
+    ]);
+    setCostName("");
+    setCostAmount("");
+    setCostCadence("monthly");
+  };
   return (
     <form
       className="sheet-form"
@@ -920,9 +1175,34 @@ function AddListingForm({ city, onSave }: { city: string; onSave: (listing: List
             city: listingCity.trim(),
             rentalType,
             rent: Number(rent),
-            currency: "CNY",
+            currency: currency.trim(),
           }),
           screenshotId,
+          address: address.trim() || undefined,
+          location,
+          area: Number(area) || undefined,
+          areaScope: area ? (rentalType === "shared" ? "private" : "whole") : undefined,
+          layout: layout.trim() || undefined,
+          floor: floor.trim() || undefined,
+          hasElevator,
+          availableDate: availableDate || undefined,
+          leaseMonths: Number(leaseMonths) || undefined,
+          paymentCadence,
+          costs: [
+            ...(deposit
+              ? [
+                  {
+                    id: crypto.randomUUID(),
+                    name: "押金",
+                    amount: Number(deposit),
+                    cadence: "oneTime" as const,
+                    refundable: depositRefundable,
+                    confirmed: Number(deposit) >= 0,
+                  },
+                ]
+              : []),
+            ...costs,
+          ],
         });
       }}
     >
@@ -954,9 +1234,11 @@ function AddListingForm({ city, onSave }: { city: string; onSave: (listing: List
           />
         </Field>
         <Field label="货币 *">
-          <select value="CNY" disabled>
-            <option>CNY · 人民币</option>
-          </select>
+          <KeyboardInput
+            value={currency}
+            onChange={(event) => setCurrency(event.target.value)}
+            placeholder="CNY、USD 或 ¥"
+          />
         </Field>
       </div>
       <label className="upload-box">
@@ -975,20 +1257,20 @@ function AddListingForm({ city, onSave }: { city: string; onSave: (listing: List
       ) : null}
       {ocr ? (
         <div className="suggestion">
-          <strong>识别建议</strong>
+          <strong>可识别内容建议</strong>
           <p>
-            {ocr.city ?? "未识别城市"} · {ocr.rent ? `¥${ocr.rent}` : "未识别租金"}
+            {[
+              ocr.city,
+              ocr.rent && `${ocr.currency ?? currency} ${ocr.rent}`,
+              ocr.address,
+              ocr.area && `${ocr.area} ㎡`,
+            ]
+              .filter(Boolean)
+              .join(" · ") || "未识别到可直接填入的字段"}
           </p>
           <div>
-            <button
-              type="button"
-              onClick={() => {
-                if (ocr.city) setListingCity(ocr.city);
-                if (ocr.rent) setRent(String(ocr.rent));
-                setOcrStatus("已采用建议，保存后才参与比较");
-              }}
-            >
-              采用建议
+            <button type="button" onClick={applyOcr}>
+              填入可识别内容
             </button>
             <button type="button" onClick={() => setOcr(undefined)}>
               忽略
@@ -996,6 +1278,154 @@ function AddListingForm({ city, onSave }: { city: string; onSave: (listing: List
           </div>
         </div>
       ) : null}
+      <details
+        className="supplementary-fields"
+        open={expanded}
+        onToggle={(event) => setExpanded(event.currentTarget.open)}
+      >
+        <summary>
+          补充信息（可选）
+          <ChevronRightIcon />
+        </summary>
+        <div className="supplementary-content">
+          <LocationFields
+            address={address}
+            location={location}
+            onChange={({ address: nextAddress, location: nextLocation }) => {
+              if (nextAddress !== undefined) setAddress(nextAddress);
+              if (nextLocation !== undefined) setLocation(nextLocation);
+            }}
+          />
+          <div className="form-grid">
+            <Field label={rentalType === "shared" ? "私人空间面积" : "整套面积"}>
+              <KeyboardInput
+                inputMode="decimal"
+                value={area}
+                onChange={(event) => setArea(event.target.value.replace(/[^\d.]/g, ""))}
+                placeholder="未知"
+              />
+            </Field>
+            <Field label="户型">
+              <KeyboardInput
+                value={layout}
+                onChange={(event) => setLayout(event.target.value)}
+                placeholder="例如：1 室 1 厅"
+              />
+            </Field>
+          </div>
+          <div className="form-grid">
+            <Field label="楼层">
+              <KeyboardInput
+                value={floor}
+                onChange={(event) => setFloor(event.target.value)}
+                placeholder="例如：6/18 层"
+              />
+            </Field>
+            <Field label="电梯">
+              <select
+                value={hasElevator === undefined ? "" : String(hasElevator)}
+                onChange={(event) =>
+                  setHasElevator(event.target.value === "" ? undefined : event.target.value === "true")
+                }
+              >
+                <option value="">未知</option>
+                <option value="true">有</option>
+                <option value="false">无</option>
+              </select>
+            </Field>
+          </div>
+          <div className="form-grid">
+            <Field label="可入住日期">
+              <KeyboardInput
+                type="date"
+                value={availableDate}
+                onChange={(event) => setAvailableDate(event.target.value)}
+              />
+            </Field>
+            <Field label="租期（月）">
+              <KeyboardInput
+                inputMode="numeric"
+                value={leaseMonths}
+                onChange={(event) => setLeaseMonths(event.target.value.replace(/\D/g, ""))}
+                placeholder="未知"
+              />
+            </Field>
+          </div>
+          <Field label="付款周期">
+            <select
+              value={paymentCadence ?? ""}
+              onChange={(event) => setPaymentCadence((event.target.value || undefined) as Listing["paymentCadence"])}
+            >
+              <option value="">未知</option>
+              <option value="monthly">每月</option>
+              <option value="quarterly">每季度</option>
+              <option value="semiAnnual">每半年</option>
+              <option value="annual">每年</option>
+            </select>
+          </Field>
+          <section className="fee-section">
+            <h3>其他费用</h3>
+            <p className="group-help">押金默认可退；其他费用按名称、金额和周期记录。</p>
+            <h4>押金</h4>
+            <div className="form-grid deposit-fields">
+              <Field label="押金">
+                <KeyboardInput
+                  inputMode="decimal"
+                  value={deposit}
+                  onChange={(event) => setDeposit(event.target.value.replace(/[^\d.]/g, ""))}
+                  placeholder="金额"
+                />
+              </Field>
+              <label className="refund-toggle">
+                <input
+                  type="checkbox"
+                  checked={depositRefundable}
+                  onChange={(event) => setDepositRefundable(event.target.checked)}
+                />{" "}
+                默认可退
+              </label>
+            </div>
+            {costs.map((cost) => (
+              <div className="cost-row" key={cost.id}>
+                <span>
+                  <strong>{cost.name}</strong>
+                  <small>{costCadenceLabel(cost.cadence)}</small>
+                </span>
+                <b>{formatMoney(cost.amount, currency)}</b>
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => setCosts((current) => current.filter((item) => item.id !== cost.id))}
+                >
+                  删除
+                </button>
+              </div>
+            ))}
+            <div className="cost-entry">
+              <KeyboardInput
+                value={costName}
+                onChange={(event) => setCostName(event.target.value)}
+                placeholder="费用名称"
+              />
+              <KeyboardInput
+                inputMode="decimal"
+                value={costAmount}
+                onChange={(event) => setCostAmount(event.target.value.replace(/[^\d.]/g, ""))}
+                placeholder="金额"
+              />
+              <select
+                value={costCadence}
+                onChange={(event) => setCostCadence(event.target.value as typeof costCadence)}
+              >
+                {costCadenceOptions()}
+              </select>
+              <button type="button" disabled={!costName.trim() || costAmount === ""} onClick={addCost}>
+                <PlusIcon />
+              </button>
+            </div>
+          </section>
+        </div>
+      </details>
       <button className="full-primary" disabled={!valid}>
         保存租赁方案
       </button>
@@ -1023,12 +1453,10 @@ function EliminateDecision({ listing, onConfirm }: { listing: Listing; onConfirm
 }
 
 function ListingEditor({
-  task,
   listing,
   onChange,
   onToggleFocus,
 }: {
-  task: AppState["task"];
   listing: Listing;
   onChange: (patch: Partial<Listing>) => void;
   onToggleFocus: () => void;
@@ -1036,8 +1464,8 @@ function ListingEditor({
   const [costName, setCostName] = useState("");
   const [costAmount, setCostAmount] = useState("");
   const [costCadence, setCostCadence] = useState<Listing["costs"][number]["cadence"]>("monthly");
-  const [costRefundable, setCostRefundable] = useState(false);
   const [inspectionName, setInspectionName] = useState("");
+  const deposit = listing.costs.find((cost) => cost.name === "押金");
   const updateInspection = (id: string, patch: Partial<Listing["inspections"][number]>) =>
     onChange({ inspections: listing.inspections.map((item) => (item.id === id ? { ...item, ...patch } : item)) });
   const addPhoto = async (inspectionId: string, file?: File) => {
@@ -1054,13 +1482,11 @@ function ListingEditor({
       </button>
       <section>
         <h3>基本信息</h3>
-        <Field label="地址（可未知）">
-          <KeyboardInput
-            value={listing.address ?? ""}
-            onChange={(event) => onChange({ address: event.target.value })}
-            placeholder="稍后补充"
-          />
-        </Field>
+        <LocationFields
+          address={listing.address ?? ""}
+          location={listing.location}
+          onChange={(patch) => onChange(patch)}
+        />
         <div className="form-grid">
           <Field label={listing.rentalType === "shared" ? "私人空间面积" : "整套面积"}>
             <KeyboardInput
@@ -1101,42 +1527,94 @@ function ListingEditor({
         </div>
       </section>
       <section>
-        <h3>真实成本</h3>
-        <Field label="首期预付租金（月，可未知）">
-          <KeyboardInput
-            inputMode="numeric"
-            value={listing.prepaidRentMonths ?? ""}
-            onChange={(event) => {
-              const months = Number(event.target.value);
-              onChange({
-                prepaidRentMonths:
-                  event.target.value && Number.isFinite(months) ? Math.max(1, Math.round(months)) : undefined,
-              });
-            }}
-            placeholder="例如：付三填 3"
-          />
-        </Field>
-        {listing.costs.map((cost) => (
-          <div className="cost-row" key={cost.id}>
-            <button
-              className={cost.confirmed ? "check active" : "check"}
-              onClick={() =>
+        <h3>其他费用</h3>
+        <p className="group-help">押金默认可退；其他费用仅记录名称、金额和周期。</p>
+        <h4>押金</h4>
+        <div className="form-grid deposit-fields">
+          <Field label="押金">
+            <KeyboardInput
+              inputMode="decimal"
+              value={deposit?.amount ?? ""}
+              placeholder="金额"
+              onChange={(event) => {
+                const value = event.target.value.replace(/[^\d.]/g, "");
+                const amount = value === "" ? undefined : Number(value);
                 onChange({
-                  costs: listing.costs.map((item) =>
-                    item.id === cost.id ? { ...item, confirmed: !item.confirmed } : item,
-                  ),
+                  costs: deposit
+                    ? listing.costs.map((cost) =>
+                        cost.id === deposit.id ? { ...cost, amount, confirmed: amount !== undefined } : cost,
+                      )
+                    : amount === undefined
+                      ? listing.costs
+                      : [
+                          ...listing.costs,
+                          {
+                            id: crypto.randomUUID(),
+                            name: "押金",
+                            amount,
+                            cadence: "oneTime",
+                            refundable: true,
+                            confirmed: true,
+                          },
+                        ],
+                });
+              }}
+            />
+          </Field>
+          <label className="refund-toggle">
+            <input
+              type="checkbox"
+              checked={deposit?.refundable ?? true}
+              onChange={(event) =>
+                onChange({
+                  costs: deposit
+                    ? listing.costs.map((cost) =>
+                        cost.id === deposit.id ? { ...cost, refundable: event.target.checked } : cost,
+                      )
+                    : [
+                        ...listing.costs,
+                        {
+                          id: crypto.randomUUID(),
+                          name: "押金",
+                          cadence: "oneTime",
+                          refundable: event.target.checked,
+                          confirmed: false,
+                        },
+                      ],
                 })
               }
-            >
-              {cost.confirmed ? <CheckCircledIcon /> : <QuestionMarkCircledIcon />}
-            </button>
-            <span>
-              <strong>{cost.name}</strong>
-              <small>{cost.cadence === "monthly" ? "每月" : cost.refundable ? "一次性 · 可退" : "一次性 · 不退"}</small>
-            </span>
-            <b>{cost.amount === undefined ? "未知" : formatMoney(cost.amount)}</b>
-          </div>
-        ))}
+            />{" "}
+            默认可退
+          </label>
+        </div>
+        <h4>其他费用</h4>
+        {listing.costs
+          .filter((cost) => cost.name !== "押金")
+          .map((cost) => (
+            <div className="cost-row" key={cost.id}>
+              <button
+                className={cost.confirmed ? "check active" : "check"}
+                onClick={() =>
+                  onChange({
+                    costs: listing.costs.map((item) =>
+                      item.id === cost.id ? { ...item, confirmed: !item.confirmed } : item,
+                    ),
+                  })
+                }
+              >
+                {cost.confirmed ? <CheckCircledIcon /> : <QuestionMarkCircledIcon />}
+              </button>
+              <span>
+                <strong>{cost.name}</strong>
+                <small>
+                  {cost.name === "押金"
+                    ? `${costCadenceLabel(cost.cadence)} · ${cost.refundable ? "可退" : "不退"}`
+                    : costCadenceLabel(cost.cadence)}
+                </small>
+              </span>
+              <b>{cost.amount === undefined ? "未知" : formatMoney(cost.amount, listing.currency)}</b>
+            </div>
+          ))}
         <div className="inline-add three">
           <KeyboardInput
             value={costName}
@@ -1162,7 +1640,7 @@ function ListingEditor({
                     name: costName.trim(),
                     amount: hasAmount ? parsedAmount : undefined,
                     cadence: costCadence,
-                    refundable: costCadence === "oneTime" && costRefundable,
+                    refundable: false,
                     confirmed: hasAmount,
                   },
                 ],
@@ -1170,7 +1648,6 @@ function ListingEditor({
               setCostName("");
               setCostAmount("");
               setCostCadence("monthly");
-              setCostRefundable(false);
             }}
           >
             <PlusIcon />
@@ -1178,51 +1655,13 @@ function ListingEditor({
         </div>
         <div className="cost-options">
           <select value={costCadence} onChange={(event) => setCostCadence(event.target.value as typeof costCadence)}>
-            <option value="monthly">每月费用</option>
-            <option value="oneTime">一次性费用</option>
+            {costCadenceOptions()}
           </select>
-          <label>
-            <input
-              type="checkbox"
-              checked={costRefundable}
-              disabled={costCadence === "monthly"}
-              onChange={(event) => setCostRefundable(event.target.checked)}
-            />
-            可退
-          </label>
         </div>
       </section>
       <section>
-        <h3>条件结果</h3>
-        {task.conditions
-          .filter((condition) => condition.importance !== "ignored")
-          .map((condition) => (
-            <div className="setting-row" key={condition.id}>
-              <span>
-                <strong>{condition.name}</strong>
-                <small>{condition.importance === "required" ? "硬性" : "偏好"}</small>
-              </span>
-              <select
-                value={listing.conditionResults[condition.id] ?? "unknown"}
-                onChange={(event) =>
-                  onChange({
-                    conditionResults: {
-                      ...listing.conditionResults,
-                      [condition.id]: event.target.value as ConditionResult,
-                    },
-                  })
-                }
-              >
-                <option value="unknown">未知</option>
-                <option value="met">满足</option>
-                <option value="conflict">冲突</option>
-              </select>
-            </div>
-          ))}
-      </section>
-      <section>
-        <h3>异常优先看房清单</h3>
-        <p className="group-help">未记录不代表正常；发现问题时再展开备注和照片。</p>
+        <h3>看房清单</h3>
+        <p className="group-help">只有有问题时才记录；备注和照片均为可选。</p>
         {listing.inspections
           .filter((item) => !item.hidden)
           .map((item) => (
@@ -1237,7 +1676,7 @@ function ListingEditor({
                   onChange={(event) => updateInspection(item.id, { state: event.target.value as InspectionState })}
                 >
                   <option value="unchecked">未检查</option>
-                  <option value="okay">未发现问题</option>
+                  <option value="okay">无问题</option>
                   <option value="issue">有问题</option>
                 </select>
               </div>
@@ -1401,7 +1840,7 @@ function CompareManager({
             <span>
               <strong>{listing.name}</strong>
               <small>
-                {listing.rentalType === "entire" ? "整租" : "合租"} · ¥{listing.rent.toLocaleString("zh-CN")}
+                {listing.rentalType === "entire" ? "整租" : "合租"} · {formatMoney(listing.rent, listing.currency)}
               </small>
             </span>
             {included ? (
@@ -1539,11 +1978,16 @@ function ResultSheet({
           </div>
           <div className="result-facts">
             <p>
-              <strong>{formatMoney(calculateCosts(finalListing, state.task.expectedMonths).monthlyHousing)}</strong>
+              <strong>
+                {formatMoney(
+                  calculateCosts(finalListing, state.task.expectedMonths).monthlyHousing,
+                  finalListing.currency,
+                )}
+              </strong>
               <small>月均居住成本</small>
             </p>
             <p>
-              <strong>{formatMoney(finalCosts?.firstCash)}</strong>
+              <strong>{formatMoney(finalCosts?.firstCash, finalListing.currency)}</strong>
               <small>首期现金压力</small>
             </p>
             <p>

@@ -28,6 +28,22 @@ test("不用截图也允许用五字段手动保存", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "测试房源" }).first()).toBeVisible();
 });
 
+test("添加房源可在同一表单展开补充信息并保存费用", async ({ page }) => {
+  await page.getByRole("button", { name: "添加房源" }).click();
+  await page.getByPlaceholder("例如：徐汇 · 一室一厅").fill("补充信息房源");
+  await page.getByLabel("月租 *").fill("5000");
+  await page.getByText("补充信息（可选）").click();
+  await expect(page.getByTestId("map-picker")).toBeVisible();
+  await page.getByLabel("地址（可未知）").fill("上海市徐汇区");
+  await page.getByLabel("押金").fill("5000");
+  await page.getByPlaceholder("费用名称").last().fill("物业费");
+  await page.locator(".cost-entry").getByPlaceholder("金额").fill("300");
+  await page.locator(".cost-entry select").selectOption("quarterly");
+  await page.locator(".cost-entry button").click();
+  await page.getByRole("button", { name: "保存租赁方案" }).click();
+  await expect(page.getByRole("heading", { name: "补充信息房源" }).first()).toBeVisible();
+});
+
 test("淘汰后可恢复到候选池", async ({ page }) => {
   await page.getByTestId("listing-card-xuhui").getByRole("button", { name: "淘汰" }).click();
   await page.getByPlaceholder("例如：通勤超过硬性上限").fill("通勤时间不合适");
