@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getComparisonListings, initialState, normalizeTask } from "./domain";
+import { formatCommuteMode, getComparisonListings, initialState, normalizeTask } from "./domain";
 
 describe("候选池状态", () => {
   it("淘汰房源会退出比较且不再作为基准", () => {
@@ -28,5 +28,26 @@ describe("候选池状态", () => {
     const task = structuredClone(initialState.task);
     task.baselineId = "jingan";
     expect(getComparisonListings(task).map((listing) => listing.id)).toEqual(["jingan", "xuhui"]);
+  });
+
+  it("读取旧本地数据时保留自定义货币并补齐新增字段", () => {
+    const task = structuredClone(initialState.task);
+    task.listings[0].currency = "USD";
+    task.listings[0].inspections = undefined as unknown as (typeof task.listings)[0]["inspections"];
+    const normalized = normalizeTask(task);
+    expect(normalized.listings[0].currency).toBe("USD");
+    expect(normalized.listings[0].inspections).toHaveLength(9);
+  });
+
+  it("旧本地记录缺少照片集合时仍可正常归一化", () => {
+    const task = structuredClone(initialState.task);
+    delete task.listings[0].photoIds;
+    expect(normalizeTask(task).listings[0].photoIds).toEqual([]);
+  });
+
+  it("通勤方式使用用户可见的中文文案", () => {
+    expect(formatCommuteMode("subway")).toBe("地铁");
+    expect(formatCommuteMode("walking")).toBe("步行");
+    expect(formatCommuteMode("driving")).toBe("开车");
   });
 });
