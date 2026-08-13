@@ -30,6 +30,15 @@ describe("候选池状态", () => {
     expect(getComparisonListings(task).map((listing) => listing.id)).toEqual(["jingan", "xuhui"]);
   });
 
+  it("读取旧本地数据时保留自定义货币并补齐新增字段", () => {
+    const task = structuredClone(initialState.task);
+    task.listings[0].currency = "USD";
+    task.listings[0].inspections = undefined as unknown as (typeof task.listings)[0]["inspections"];
+    const normalized = normalizeTask(task);
+    expect(normalized.listings[0].currency).toBe("USD");
+    expect(normalized.listings[0].inspections).toHaveLength(9);
+  });
+
   it("旧本地记录缺少照片集合时仍可正常归一化", () => {
     const task = structuredClone(initialState.task);
     delete task.listings[0].photoIds;

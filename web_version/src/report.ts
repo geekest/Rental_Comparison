@@ -8,7 +8,7 @@ export function buildDecisionReport(state: AppState) {
   const finalListing = task.listings.find((listing) => listing.id === task.finalListingId);
   const listingHtml = (listing: Listing) => {
     const costs = calculateCosts(listing, task.expectedMonths);
-    return `<section><h2>${escapeHtml(listing.name)}</h2><p>状态：${listing.id === task.finalListingId ? "最终房源" : listing.status === "eliminated" ? "已淘汰" : "候选"}</p><p>月租：${formatMoney(listing.rent)}；月均居住成本：${formatMoney(costs.monthlyHousing)}；首期现金：${formatMoney(costs.firstCash)}</p><p>单程通勤：${formatCommuteMode(listing.commuteMode)} · ${listing.commuteMinutes ?? "未知"} 分钟；通勤支出：${listing.commuteFare === undefined ? "未知" : `${formatMoney(listing.commuteFare)}/次`}</p><p>硬性条件风险：${
+    return `<section><h2>${escapeHtml(listing.name)}</h2><p>状态：${listing.id === task.finalListingId ? "最终房源" : listing.status === "eliminated" ? "已淘汰" : "候选"}</p><p>月租：${formatMoney(listing.rent, listing.currency)}；月均居住成本：${formatMoney(costs.monthlyHousing, listing.currency)}；首期现金：${formatMoney(costs.firstCash, listing.currency)}</p><p>单程通勤：${formatCommuteMode(listing.commuteMode)} · ${listing.commuteMinutes ?? "未知"} 分钟；通勤支出：${listing.commuteFare === undefined ? "未知" : `${formatMoney(listing.commuteFare, listing.currency)}/次`}</p><p>硬性条件风险：${
       getRequiredConflicts(task, listing)
         .map((item) => escapeHtml(item.name))
         .join("、") || "无已知冲突"
