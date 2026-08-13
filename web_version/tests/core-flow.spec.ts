@@ -9,8 +9,15 @@ test("候选、比较、最终确认与撤回形成闭环", async ({ page }) => 
   await expect(page.getByTestId("candidate-screen")).toBeVisible();
   await page.locator(".bottom-nav button").nth(1).click();
   await expect(page.getByTestId("compare-screen")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "真实成本" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "通勤" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "条件" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "看房异常" })).toBeVisible();
   await page.getByRole("button", { name: "通勤" }).click();
   await expect(page.getByText("单程到 静安寺，支出单独显示")).toBeVisible();
+  await expect
+    .poll(() => page.getByTestId("device-screen").evaluate((screen) => screen.scrollTop))
+    .toBeGreaterThan(100);
   await page.getByRole("button", { name: "确认最终房源" }).click();
   await page.getByText("我已知晓以上未解决项").click();
   await page.getByPlaceholder("为什么这套更适合我？").fill("成本与通勤在我可接受范围内");
