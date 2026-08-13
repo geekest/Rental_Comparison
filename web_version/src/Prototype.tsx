@@ -21,8 +21,10 @@ import { calculateCosts, formatMoney, getInspectionIssues, getRequiredConflicts 
 import {
   type AppState,
   type ConditionResult,
+  commuteModeLabels,
   createEmptyTask,
   createListing,
+  formatCommuteMode,
   getComparisonListings,
   type InspectionState,
   initialState,
@@ -398,48 +400,57 @@ function ListingsScreen({
                 <button className="card-eliminate" aria-label="淘汰" onClick={() => onEliminate(listing)}>
                   <TrashIcon />
                 </button>
-                <button className="card-main" onClick={() => onOpen("detail", listing.id)}>
-                  <img src={listing.imageUrl ?? "/assets/listings/putuo.png"} alt="" />
-                  <div className="card-body">
-                    <div className="card-title-row">
-                      <h2>{listing.name}</h2>
-                      {listing.focused ? (
-                        <span className="focus-mark">
-                          <StarFilledIcon /> 重点
+                <div className="card-main">
+                  <ListingPhotoGallery listing={listing} />
+                  <button className="card-detail-button" onClick={() => onOpen("detail", listing.id)}>
+                    <div className="card-body">
+                      <div className="card-title-row">
+                        <h2>{listing.name}</h2>
+                        {listing.focused ? (
+                          <span className="focus-mark">
+                            <StarFilledIcon /> 重点
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="rent">
+                        <span>¥</span> {listing.rent.toLocaleString("zh-CN")}
+                        <small> / 月</small>
+                      </p>
+                      <dl className="card-facts">
+                        <div>
+                          <ClockIcon />
+                          <dt>通勤</dt>
+                          <dd>
+                            {formatCommuteMode(listing.commuteMode)} · {listing.commuteMinutes ?? "?"} 分钟
+                          </dd>
+                        </div>
+                        <div>
+                          <HomeIcon />
+                          <dt>{formatRentalRooms(listing)}</dt>
+                          <dd>
+                            {listing.area
+                              ? `${listing.area} ㎡${listing.areaScope === "private" ? " 私人空间" : " 整套"}`
+                              : "面积未知"}
+                          </dd>
+                        </div>
+                        <div>
+                          <span className="fact-icon">层</span>
+                          <dt>楼层</dt>
+                          <dd>{listing.floor || "待补充"}</dd>
+                        </div>
+                      </dl>
+                      {unknownCount > 0 ? (
+                        <span className="warning-chip">
+                          {costs.unknowns[0]}待确认{unknownCount > 1 ? ` +${unknownCount - 1}` : ""}
                         </span>
-                      ) : null}
+                      ) : (
+                        <span className="complete-chip">
+                          <CheckCircledIcon /> 关键信息已确认
+                        </span>
+                      )}
                     </div>
-                    <p className="rent">
-                      <span>¥</span> {listing.rent.toLocaleString("zh-CN")}
-                      <small> / 月</small>
-                    </p>
-                    <dl className="card-facts">
-                      <div>
-                        <ClockIcon />
-                        <dt>通勤</dt>
-                        <dd>{listing.commuteMinutes ?? "?"} 分钟</dd>
-                      </div>
-                      <div>
-                        <HomeIcon />
-                        <dt>{listing.rentalType === "entire" ? "整租" : "合租"}</dt>
-                        <dd>
-                          {listing.area
-                            ? `${listing.area} ㎡${listing.areaScope === "private" ? " 私人空间" : " 整套"}`
-                            : "面积未知"}
-                        </dd>
-                      </div>
-                    </dl>
-                    {unknownCount > 0 ? (
-                      <span className="warning-chip">
-                        {costs.unknowns[0]}待确认{unknownCount > 1 ? ` +${unknownCount - 1}` : ""}
-                      </span>
-                    ) : (
-                      <span className="complete-chip">
-                        <CheckCircledIcon /> 关键信息已确认
-                      </span>
-                    )}
-                  </div>
-                </button>
+                  </button>
+                </div>
                 <div className="card-actions">
                   <button
                     className={isCompared ? "primary-button selected" : "primary-button"}
@@ -511,6 +522,63 @@ function ListingsScreen({
         ) : null}
       </main>
     </MobileScroll>
+  );
+}
+
+function formatRentalRooms(listing: Listing) {
+  const rentalType = listing.rentalType === "entire" ? "整租" : "合租";
+  return listing.roomCount ? `${rentalType} ${listing.roomCount} 居` : `${rentalType} 居室待补充`;
+}
+
+function ListingPhotoGallery({ listing }: { listing: Listing }) {
+  const mediaKey = [listing.screenshotId, ...(listing.photoIds ?? [])]
+    .filter((id): id is string => Boolean(id))
+    .join(",");
+  const [localPhotos, setLocalPhotos] = useState<Array<{ id: string; url: string }>>([]);
+
+  useEffect(() => {
+    let active = true;
+    let objectUrls: string[] = [];
+    const mediaIds = mediaKey ? mediaKey.split(",") : [];
+    if (!mediaIds.length) {
+      setLocalPhotos([]);
+      return () => undefined;
+    }
+    void Promise.all(mediaIds.map((id) => loadMedia(id)))
+      .then((media) => {
+        const photos = media.flatMap((item, index) => {
+          if (!item) return [];
+          const url = URL.createObjectURL(item);
+          return [{ id: mediaIds[index], url }];
+        });
+        objectUrls = photos.map((photo) => photo.url);
+        if (active) setLocalPhotos(photos);
+      })
+      .catch(() => {
+        if (active) setLocalPhotos([]);
+      });
+    return () => {
+      active = false;
+      objectUrls.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+    };
+  }, [mediaKey]);
+
+  const photos = [...(listing.imageUrl ? [{ id: "default", url: listing.imageUrl }] : []), ...localPhotos];
+  const sources = photos.length ? photos : [{ id: "fallback", url: "/assets/listings/putuo.png" }];
+  if (sources.length === 1)
+    return <img className="listing-media-image" src={sources[0].url} alt="" draggable={false} />;
+  return (
+    <Carousel
+      className="listing-media-carousel"
+      contentClassName="listing-media-track"
+      ariaLabel={`${listing.name} 的照片`}
+    >
+      {sources.map((source) => (
+        <img className="listing-media-image" src={source.url} alt="" draggable={false} key={source.id} />
+      ))}
+    </Carousel>
   );
 }
 
@@ -660,7 +728,10 @@ function CompareSectionContent({
                 {listing.commuteMinutes ?? "?"}
                 <small> 分钟</small>
               </strong>
-              <span>单次支出 {listing.commuteFare === undefined ? "未知" : formatMoney(listing.commuteFare)}</span>
+              <span>
+                {formatCommuteMode(listing.commuteMode)} · 单次支出{" "}
+                {listing.commuteFare === undefined ? "未知" : formatMoney(listing.commuteFare)}
+              </span>
               <em>
                 {listing.commuteMinutes && listing.commuteMinutes > 40 ? "超过 40 分钟硬性条件" : "通勤条件无已知冲突"}
               </em>
@@ -885,21 +956,31 @@ function AddListingForm({ city, onSave }: { city: string; onSave: (listing: List
   const [listingCity, setListingCity] = useState(city);
   const [rentalType, setRentalType] = useState<Listing["rentalType"]>("entire");
   const [rent, setRent] = useState("");
+  const [roomCount, setRoomCount] = useState("");
   const [screenshotId, setScreenshotId] = useState<string>();
+  const [photoIds, setPhotoIds] = useState<string[]>([]);
   const [ocr, setOcr] = useState<OcrSuggestion>();
   const [ocrStatus, setOcrStatus] = useState("");
-  const valid = name.trim() && listingCity.trim() && Number(rent) > 0;
-  const handleScreenshot = async (file?: File) => {
-    if (!file) return;
+  const valid =
+    name.trim() &&
+    listingCity.trim() &&
+    Number(rent) > 0 &&
+    Number.isInteger(Number(roomCount)) &&
+    Number(roomCount) > 0;
+  const handlePhotos = async (files?: FileList) => {
+    const selectedFiles = files ? Array.from(files) : [];
+    if (!selectedFiles.length) return;
     try {
-      setScreenshotId(await saveMedia(file));
+      const mediaIds = await Promise.all(selectedFiles.map((file) => saveMedia(file)));
+      setScreenshotId(mediaIds[0]);
+      setPhotoIds(mediaIds.slice(1));
     } catch {
-      setOcrStatus("截图保存失败，请重新选择");
+      setOcrStatus("照片保存失败，请重新选择");
       return;
     }
     setOcrStatus("正在本地识别 0%");
     try {
-      const suggestion = await recognizeListingScreenshot(file, (progress) =>
+      const suggestion = await recognizeListingScreenshot(selectedFiles[0], (progress) =>
         setOcrStatus(`正在本地识别 ${progress}%`),
       );
       setOcr(suggestion);
@@ -923,6 +1004,8 @@ function AddListingForm({ city, onSave }: { city: string; onSave: (listing: List
             currency: "CNY",
           }),
           screenshotId,
+          photoIds,
+          roomCount: Number(roomCount),
         });
       }}
     >
@@ -959,13 +1042,26 @@ function AddListingForm({ city, onSave }: { city: string; onSave: (listing: List
           </select>
         </Field>
       </div>
+      <Field label="居室数 *">
+        <KeyboardInput
+          inputMode="numeric"
+          value={roomCount}
+          onChange={(event) => setRoomCount(event.target.value.replace(/\D/g, ""))}
+          placeholder="例如：2"
+        />
+      </Field>
       <label className="upload-box">
         <ImageIcon />
         <span>
-          <strong>{screenshotId ? "已绑定截图" : "绑定真实房源截图"}</strong>
+          <strong>{screenshotId ? `已保存 ${photoIds.length + 1} 张房源照片` : "保存房源照片"}</strong>
           <small>图片只在当前浏览器处理与保存</small>
         </span>
-        <input type="file" accept="image/*" onChange={(event) => handleScreenshot(event.target.files?.[0])} />
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={(event) => handlePhotos(event.target.files ?? undefined)}
+        />
       </label>
       {ocrStatus ? (
         <div className="ocr-status">
@@ -1038,6 +1134,7 @@ function ListingEditor({
   const [costCadence, setCostCadence] = useState<Listing["costs"][number]["cadence"]>("monthly");
   const [costRefundable, setCostRefundable] = useState(false);
   const [inspectionName, setInspectionName] = useState("");
+  const [photoStatus, setPhotoStatus] = useState("");
   const updateInspection = (id: string, patch: Partial<Listing["inspections"][number]>) =>
     onChange({ inspections: listing.inspections.map((item) => (item.id === id ? { ...item, ...patch } : item)) });
   const addPhoto = async (inspectionId: string, file?: File) => {
@@ -1045,6 +1142,17 @@ function ListingEditor({
     const id = await saveMedia(file);
     const item = listing.inspections.find((current) => current.id === inspectionId);
     if (item) updateInspection(inspectionId, { photoIds: [...item.photoIds, id].slice(0, 3) });
+  };
+  const addListingPhotos = async (files?: FileList) => {
+    const selectedFiles = files ? Array.from(files) : [];
+    if (!selectedFiles.length) return;
+    try {
+      const photoIds = await Promise.all(selectedFiles.map((file) => saveMedia(file)));
+      onChange({ photoIds: [...(listing.photoIds ?? []), ...photoIds] });
+      setPhotoStatus(`已保存 ${photoIds.length} 张房源照片`);
+    } catch {
+      setPhotoStatus("照片保存失败，请重新选择");
+    }
   };
   return (
     <div className="sheet-form">
@@ -1084,6 +1192,23 @@ function ListingEditor({
           </Field>
         </div>
         <div className="form-grid">
+          <Field label="楼层（可未知）">
+            <KeyboardInput
+              value={listing.floor ?? ""}
+              onChange={(event) => onChange({ floor: event.target.value })}
+              placeholder="例如：8 / 18 层"
+            />
+          </Field>
+          <Field label="居室数">
+            <KeyboardInput
+              inputMode="numeric"
+              value={listing.roomCount ?? ""}
+              onChange={(event) => onChange({ roomCount: Number(event.target.value) || undefined })}
+              placeholder="例如：2"
+            />
+          </Field>
+        </div>
+        <div className="form-grid">
           <Field label="单程通勤（分钟）">
             <KeyboardInput
               inputMode="numeric"
@@ -1099,6 +1224,33 @@ function ListingEditor({
             />
           </Field>
         </div>
+        <Field label="通勤方式">
+          <select
+            value={listing.commuteMode ?? ""}
+            onChange={(event) => onChange({ commuteMode: (event.target.value || undefined) as Listing["commuteMode"] })}
+          >
+            <option value="">待补充</option>
+            {Object.entries(commuteModeLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <label className="upload-box">
+          <ImageIcon />
+          <span>
+            <strong>补充房源照片</strong>
+            <small>当前已保存 {(listing.screenshotId ? 1 : 0) + (listing.photoIds?.length ?? 0)} 张</small>
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(event) => addListingPhotos(event.target.files ?? undefined)}
+          />
+        </label>
+        {photoStatus ? <p className="group-help">{photoStatus}</p> : null}
       </section>
       <section>
         <h3>真实成本</h3>
