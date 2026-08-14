@@ -66,6 +66,8 @@
 - 安装依赖：`cd web_version && npm ci`
 - 本地启动：`cd web_version && npm run dev`
 - 构建：`cd web_version && npm run build`
+- 重新生成 iOS 工程：`xcodegen generate`
+- iOS 构建：`DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Rental_Comparison.xcodeproj -scheme Rental_Comparison -destination 'platform=iOS Simulator,name=iPhone 16e' build`
 
 ## 测试与验证
 
@@ -76,6 +78,7 @@
 - Lint：`cd web_version && npm run lint`
 - Typecheck：`cd web_version && npm run typecheck`
 - Format：`cd web_version && npm run format:check`
+- iOS 测试：`DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Rental_Comparison.xcodeproj -scheme Rental_Comparison -destination 'platform=iOS Simulator,name=iPhone 16e' test`
 
 新增功能时，应根据影响范围同步补充测试或记录无法验证的原因。
 

@@ -6,14 +6,15 @@ Rental Comparison 不提供房源供给，也不替用户计算“最佳房源�
 
 ## 当前阶段
 
-手机 Web 验证 MVP 已在 `web_version/` 实现，当前进入真实用户验证准备阶段：
+手机 Web 验证 MVP 已在 `web_version/` 实现，原生 iOS 版本已在 `Rental_Comparison/` 完成首版复刻：
 
 - 首轮面向中国大陆城市长租用户，通过真实候选房源验证产品价值；
 - 已支持录入、比较、重点考虑、淘汰与恢复、最终确认和撤回；
 - Web 原型采用 React、TypeScript、Vite、IndexedDB 和浏览器本地 OCR；
+- iOS 版本采用 SwiftUI、Observation、Codable JSON 文件存储与系统照片选择器，最低支持 iOS 17；
 - 没有账户、业务服务器、云同步或行为埋点；
 - 核心决策闭环已有自动化验证，完整字段和真机差距单独记录，不以“已实现 MVP”掩盖剩余范围；
-- Web 验证达到门槛并完成流程修正后，再评估原生 iPhone TestFlight 版本。
+- 原生版已可在 Xcode Simulator 运行；真机签名、Web 数据迁移与 TestFlight 发布仍需后续配置。
 
 ## 核心流程
 
@@ -52,9 +53,11 @@ Rental_Comparison/
 │       ├── sketch_map.md                  # 设计节点索引
 │       └── web_prototype_map.md           # Web 页面与实现映射
 ├── web_version/                           # 可运行手机 Web MVP
-├── Rental_Comparison/                     # 原生 App 占位目录
-├── Rental_ComparisonTests/                # 原生单元测试占位目录
-├── Rental_ComparisonUITests/              # 原生 UI 测试占位目录
+├── Rental_Comparison/                     # 原生 SwiftUI App
+├── Rental_ComparisonTests/                # 原生业务单元测试
+├── Rental_ComparisonUITests/              # 原生主流程 UI 测试
+├── Rental_Comparison.xcodeproj/            # 可直接打开的 Xcode 工程
+├── project.yml                             # XcodeGen 工程声明
 ├── AGENTS.md                              # 仓库工程与文档规则
 ├── CONTEXT.md                             # 业务术语、状态和长期不变量
 └── README.md
@@ -69,6 +72,7 @@ Rental_Comparison/
 | [MVP 范围](docs/product/mvp_scope.md) | P0 能力、非目标、验收与验证门槛 | 已确认 |
 | [核心流程规格](docs/specs/spec_001_core_flow.md) | 完整流程、数据要求、异常与验收标准 | 已确认 |
 | [本地存储策略 ADR](docs/adr/0001_local_storage_strategy.md) | IndexedDB 和本地媒体存储决策 | 已接受 |
+| [原生 iOS 本地存储 ADR](docs/adr/0002_native_ios_local_storage.md) | Codable JSON 和媒体文件存储决策 | 已接受 |
 | [Web 原型页面映射](docs/design/web_prototype_map.md) | 参考图、页面与实现状态 | 已实现 |
 | [Web 工程说明](web_version/README.md) | 运行、验证、数据与 OCR | 已验证 |
 | [工程协作规则](AGENTS.md) | 实施、验证、Git 和文档归档约定 | 当前规则 |
@@ -76,6 +80,34 @@ Rental_Comparison/
 文档之间发生冲突时，应先停止实现并确认，不自行选择解释。
 
 ## 本地运行
+
+### 原生 iOS
+
+直接用 Xcode 打开 `Rental_Comparison.xcodeproj`，选择 `Rental_Comparison` Scheme 和任意 iPhone Simulator 后运行。
+
+如果修改了 `project.yml`，先重新生成工程：
+
+```bash
+xcodegen generate
+```
+
+命令行构建与测试：
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+  xcodebuild -project Rental_Comparison.xcodeproj \
+  -scheme Rental_Comparison \
+  -destination 'platform=iOS Simulator,name=iPhone 16e' build
+
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+  xcodebuild -project Rental_Comparison.xcodeproj \
+  -scheme Rental_Comparison \
+  -destination 'platform=iOS Simulator,name=iPhone 16e' test
+```
+
+`DEVELOPER_DIR` 仅用于本机 `xcode-select` 未指向完整 Xcode 的情况。
+
+### Web MVP
 
 ```bash
 cd web_version
@@ -85,7 +117,7 @@ npm run dev
 
 本地预览默认打开 `http://127.0.0.1:4173/`。
 
-## 验证与构建
+## Web 验证与构建
 
 ```bash
 npm run check:runtime
@@ -100,4 +132,4 @@ npm run test:sites
 
 静态产物位于 `web_version/dist/client/`；原型没有服务端运行时依赖，当前没有执行正式部署。
 
-当前代码覆盖范围和下一轮候选缺口见[核心流程规格的实现状态](docs/specs/spec_001_core_flow.md#当前-web-实现状态)。
+当前代码覆盖范围和平台差距见[核心流程规格的实现状态](docs/specs/spec_001_core_flow.md#当前实现状态)。

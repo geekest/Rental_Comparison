@@ -1,2 +1,5 @@
 Rental_Comparison/.DS_Store
 .DS_Store
+.codex/derived-data/
+.codex/artifacts/
+*.xcresult
