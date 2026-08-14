@@ -1,0 +1,60 @@
+name: Rental_Comparison
+options:
+  bundleIdPrefix: com.geekest
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 1.0
+targets:
+  Rental_Comparison:
+    type: application
+    platform: iOS
+    sources:
+      - path: Rental_Comparison
+      - path: web_version/public/assets/listings
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.geekest.RentalComparison
+        PRODUCT_NAME: Rental_Comparison
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: 租房对比
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.lifestyle
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+        TARGETED_DEVICE_FAMILY: 1
+        CODE_SIGNING_STYLE: Automatic
+    scheme:
+      testTargets:
+        - Rental_ComparisonTests
+        - Rental_ComparisonUITests
+  Rental_ComparisonTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Rental_ComparisonTests
+    dependencies:
+      - target: Rental_Comparison
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.geekest.RentalComparisonTests
+        GENERATE_INFOPLIST_FILE: YES
+  Rental_ComparisonUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: Rental_ComparisonUITests
+    dependencies:
+      - target: Rental_Comparison
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.geekest.RentalComparisonUITests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Rental_Comparison
