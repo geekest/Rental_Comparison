@@ -26,4 +26,24 @@ final class RentalComparisonUITests: XCTestCase {
         XCTAssertTrue(app.textFields["listingRentField"].exists)
         XCTAssertTrue(app.buttons["saveListingButton"].exists)
     }
+
+    func testListingCardCanRemoveFromComparisonAndOpenDetails() {
+        let listingID = "11111111-1111-1111-1111-111111111111"
+        let comparisonButton = app.buttons["comparisonButton_\(listingID)"]
+
+        XCTAssertTrue(comparisonButton.waitForExistence(timeout: 5))
+        XCTAssertTrue(comparisonButton.isEnabled)
+
+        comparisonButton.tap()
+        XCTAssertEqual(comparisonButton.label, "加入对比")
+
+        comparisonButton.tap()
+        XCTAssertEqual(comparisonButton.label, "已加入对比")
+        XCTAssertTrue(app.staticTexts["8 / 18 楼"].exists)
+
+        let card = app.otherElements["listingCard_\(listingID)"]
+        XCTAssertTrue(card.waitForExistence(timeout: 3))
+        card.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45)).tap()
+        XCTAssertTrue(app.navigationBars["徐汇 · 一室一厅"].waitForExistence(timeout: 5))
+    }
 }

@@ -38,6 +38,10 @@
 - [x] 支持条件重要性、看房清单与异常照片、重点考虑、淘汰/恢复、唯一最终房源及撤回选择。
 - [x] 支持不含原始图片的决策报告和匿名测试摘要导出。
 - [x] 已具备单元测试、Playwright 核心流程测试、移动运行时检查、构建和静态托管检查。
+- [x] 修复原生 iOS 房源卡片交互与布局（2026-08-17）
+  - 改动：已加入对比可再次点击撤销；点击卡片非操作区进入详情；图片固定容器内以 fill 裁切；楼层统一展示为“X 楼”。
+  - 文件：`Rental_Comparison/ListingsView.swift`、`Rental_Comparison/ListingImageView.swift`、`Rental_ComparisonUITests/RentalComparisonUITests.swift`。
+  - 验证：iPhone 16e 模拟器执行 7 个单元测试和 3 个 UI 测试均通过；人工检查卡片图片、楼层和操作按钮。
 
 ## 待确认
 

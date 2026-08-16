@@ -5,6 +5,7 @@ struct ListingsView: View {
     @Binding var showingTaskSettings: Bool
     @State private var showingAdd = false
     @State private var limitMessage: String?
+    @State private var selectedListingID: UUID?
 
     private var candidates: [Listing] { store.task.listings.filter { $0.status == .candidate } }
     private var eliminated: [Listing] { store.task.listings.filter { $0.status == .eliminated } }
@@ -35,7 +36,11 @@ struct ListingsView: View {
                     ScrollView(.horizontal) {
                         LazyHStack(alignment: .top, spacing: 16) {
                             ForEach(candidates) { listing in
-                                ListingCard(listing: listing, limitMessage: $limitMessage)
+                                ListingCard(
+                                    listing: listing,
+                                    limitMessage: $limitMessage,
+                                    onOpenDetails: { selectedListingID = listing.id }
+                                )
                                     .containerRelativeFrame(.horizontal, count: 1, span: 1, spacing: 32)
                             }
                         }
@@ -76,6 +81,14 @@ struct ListingsView: View {
             .padding(.vertical)
         }
         .navigationDestination(for: UUID.self) { ListingDetailView(listingID: $0) }
+        .navigationDestination(isPresented: Binding(
+            get: { selectedListingID != nil },
+            set: { if !$0 { selectedListingID = nil } }
+        )) {
+            if let selectedListingID {
+                ListingDetailView(listingID: selectedListingID)
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button("任务设置", systemImage: "slider.horizontal.3") { showingTaskSettings = true }
@@ -102,11 +115,13 @@ private struct ListingCard: View {
     @Environment(AppStore.self) private var store
     let listing: Listing
     @Binding var limitMessage: String?
+    let onOpenDetails: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             ZStack(alignment: .topTrailing) {
                 ListingImageView(listing: listing)
+                    .frame(maxWidth: .infinity)
                     .frame(height: 260)
                 if listing.focused {
                     StatusPill(text: "重点", systemImage: "star.fill", color: .orange)
@@ -139,7 +154,7 @@ private struct ListingCard: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
-                    .disabled(store.task.comparisonIDs.contains(listing.id))
+                    .accessibilityIdentifier("comparisonButton_\(listing.id.uuidString)")
                     NavigationLink(value: listing.id) {
                         Text("查看详情")
                             .frame(maxWidth: .infinity)
@@ -154,6 +169,9 @@ private struct ListingCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
         .shadow(color: .black.opacity(0.08), radius: 20, y: 8)
         .padding(.vertical, 4)
+        .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .onTapGesture(perform: onOpenDetails)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("listingCard_\(listing.id.uuidString)")
     }
 
@@ -175,7 +193,12 @@ private struct ListingCard: View {
 
     private var floorText: String {
         guard let floor = listing.floor, !floor.isEmpty else { return "" }
-        return "楼层 \(floor)"
+        let value = floor
+            .replacingOccurrences(of: "楼层", with: "")
+            .replacingOccurrences(of: "层", with: "")
+            .replacingOccurrences(of: "楼", with: "")
+            .trimmingCharacters(in: .whitespaces)
+        return "\(value) 楼"
     }
 
     private var areaText: String {
