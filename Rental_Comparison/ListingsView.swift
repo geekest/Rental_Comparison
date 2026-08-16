@@ -114,30 +114,39 @@ private struct ListingCard: View {
                 }
             }
             VStack(alignment: .leading, spacing: 10) {
-                Text(listing.name).font(.title2.bold()).lineLimit(2)
+                Text(listing.name)
+                    .font(.title2.bold())
+                    .lineLimit(1)
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(listing.rent.formattedMoney(currency: listing.currency)).font(.title.bold())
                     Text("/ 月").foregroundStyle(.secondary)
                 }
-                Label {
-                    Text("\(listing.commuteMode?.title ?? "方式待补充") · \(listing.commuteMinutes.map(String.init) ?? "未知") 分钟")
-                } icon: {
-                    Image(systemName: listing.commuteMode?.symbol ?? "clock")
-                }
-                Label("\(listing.roomDescription)  \(areaText)", systemImage: "house")
-                if let floor = listing.floor { Label("楼层 \(floor)", systemImage: "building.2") }
-                if !DecisionEngine.calculateCosts(for: listing, expectedMonths: store.task.expectedMonths).unknowns.isEmpty {
-                    StatusPill(text: "费用待确认", systemImage: "exclamationmark.circle", color: .orange)
-                }
-                HStack {
-                    Button(store.task.comparisonIDs.contains(listing.id) ? "已加入对比" : "加入对比") {
+                Label(commuteText.isEmpty ? "通勤" : commuteText, systemImage: listing.commuteMode?.symbol ?? "clock")
+                    .opacity(commuteText.isEmpty ? 0 : 1)
+                    .accessibilityHidden(commuteText.isEmpty)
+                Label(spaceText, systemImage: "house")
+                Label(floorText.isEmpty ? "楼层" : floorText, systemImage: "building.2")
+                    .opacity(floorText.isEmpty ? 0 : 1)
+                    .accessibilityHidden(floorText.isEmpty)
+                StatusPill(text: "费用待确认", systemImage: "exclamationmark.circle", color: .orange)
+                    .opacity(hasUnknownCosts ? 1 : 0)
+                    .accessibilityHidden(!hasUnknownCosts)
+                HStack(spacing: 12) {
+                    Button {
                         if !store.toggleComparison(listing.id) { limitMessage = "一次最多比较 5 套候选房源。" }
+                    } label: {
+                        Text(store.task.comparisonIDs.contains(listing.id) ? "已加入对比" : "加入对比")
+                            .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
                     .disabled(store.task.comparisonIDs.contains(listing.id))
-                    NavigationLink("查看详情", value: listing.id)
-                        .buttonStyle(.borderedProminent)
+                    NavigationLink(value: listing.id) {
+                        Text("查看详情")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
                 }
+                .frame(maxWidth: .infinity)
             }
             .padding([.horizontal, .bottom])
         }
@@ -148,9 +157,32 @@ private struct ListingCard: View {
         .accessibilityIdentifier("listingCard_\(listing.id.uuidString)")
     }
 
+    private var hasUnknownCosts: Bool {
+        !DecisionEngine.calculateCosts(for: listing, expectedMonths: store.task.expectedMonths).unknowns.isEmpty
+    }
+
+    private var commuteText: String {
+        [listing.commuteMode?.title, listing.commuteMinutes.map { "\($0) 分钟" }]
+            .compactMap { $0 }
+            .joined(separator: " · ")
+    }
+
+    private var spaceText: String {
+        [listing.roomDescription, areaText]
+            .filter { !$0.isEmpty }
+            .joined(separator: "  ")
+    }
+
+    private var floorText: String {
+        guard let floor = listing.floor, !floor.isEmpty else { return "" }
+        return "楼层 \(floor)"
+    }
+
     private var areaText: String {
-        guard let area = listing.area else { return "面积待补充" }
-        return "\(area.formatted(.number.precision(.fractionLength(0...1)))) ㎡ \(listing.areaScope ?? "")"
+        guard let area = listing.area else { return "" }
+        return ["\(area.formatted(.number.precision(.fractionLength(0...1)))) ㎡", listing.areaScope]
+            .compactMap { $0 }
+            .joined(separator: " ")
     }
 }
 
