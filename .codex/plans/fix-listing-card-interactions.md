@@ -75,6 +75,9 @@
 - 发现：撤销对比并非数据层缺失，`toggleComparison(_:)` 已可移除 ID。
 - 影响：无需修改数据模型或持久化逻辑。
 - 处理方式：仅移除卡片 UI 的禁用状态，并用 UI 测试锁定行为。
+- 发现：实际新增房源的 4288×2848 照片可加载到最新构建，但固定 260 pt 高度的图片区仍偏高，视觉验收未通过。
+- 影响：图片不会由原始比例直接决定高度，但卡片没有统一的图片展示比例。
+- 处理方式：改为 `GeometryReader` 驱动的 16:9 显式图片容器，使任意比例图片只在容器内以 fill 模式裁切。
 
 ## 9. 决策记录
 
@@ -102,9 +105,9 @@
 
 ## 12. 最终结果与复盘
 
-- 实际完成：移除了已加入对比按钮的禁用状态；卡片内容区通过局部详情状态导航；图片视图和卡片明确约束为固定容器并裁切；楼层文案规范为“X 楼”。
+- 实际完成：移除了已加入对比按钮的禁用状态；卡片内容区通过局部详情状态导航；楼层文案规范为“X 楼”；图片容器使用 `GeometryReader` 固定为 16:9，并在容器内 fill 裁切。
 - 可访问性：直接给卡片根视图增加手势会合并内部按钮语义；通过 `.accessibilityElement(children: .contain)` 保留比较按钮的独立可访问性。
 - 修改文件：`Rental_Comparison/ListingsView.swift`、`Rental_Comparison/ListingImageView.swift`、`Rental_ComparisonUITests/RentalComparisonUITests.swift`、`PLAN.md`。
-- 验证：iPhone 16e 模拟器下 `xcodebuild test` 通过，7 个单元测试与 3 个 UI 测试均为 0 失败；最终截图确认 fill 裁切和“8 / 18 楼”。
-- 未验证：没有导入一张新的非常规比例用户照片；布局已通过固定 260 pt 容器和 `scaledToFill` 实现，并在现有照片上人工检查。
+- 验证：iPhone 16e 模拟器下 `xcodebuild test` 通过，7 个单元测试与 3 个 UI 测试均为 0 失败；用用户新增的 4288×2848 照片确认 16:9 fill 裁切和“8 / 18 楼”。
+- 未验证：未在真实 iPhone 上复验。
 - 后续：无需更新 `AGENTS.md`；提交后如需共享可在现有 PR #11 中追加本次 commit。

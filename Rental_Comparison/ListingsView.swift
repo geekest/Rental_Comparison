@@ -119,15 +119,18 @@ private struct ListingCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            ZStack(alignment: .topTrailing) {
-                ListingImageView(listing: listing)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 260)
-                if listing.focused {
-                    StatusPill(text: "重点", systemImage: "star.fill", color: .orange)
-                        .padding(12)
+            GeometryReader { proxy in
+                ZStack(alignment: .topTrailing) {
+                    ListingImageView(listing: listing)
+                    if listing.focused {
+                        StatusPill(text: "重点", systemImage: "star.fill", color: .orange)
+                            .padding(12)
+                    }
                 }
+                .frame(width: proxy.size.width, height: proxy.size.height)
             }
+            .aspectRatio(16.0 / 9.0, contentMode: .fit)
+            .clipped()
             VStack(alignment: .leading, spacing: 10) {
                 Text(listing.name)
                     .font(.title2.bold())
