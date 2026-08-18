@@ -51,14 +51,15 @@
 
 ### Rental Decision System iOS 重构
 
-- 状态：Phase 1 进行中。
+- 状态：Phase 1 已完成，准备进入 Phase 2-3。
 - 目标：将原生 iOS 从房源字段整理流程迁移为围绕事实、证据、未知项、验证任务和 Decision Readiness 的决策系统。
 - 范围：P0 仅覆盖 v1 → v2 本地迁移、选房/对比/待确认导航、Quick Capture、差异优先比较、最终确认和 China Regional Template；不包含服务器、AI、地图、Share Extension 与云同步。
 - 权威文档：`docs/specs/spec_002_decision_readiness_rebuild.md`、`docs/adr/0003_decision_model_v2_migration.md`、`.codex/plans/rental-decision-rebuild.md`。
 - 已完成：更新产品简述、范围、上下文、v2 规格与迁移 ADR；将 v1 SPEC 标记为历史兼容规格。
 - 已完成：新增 Hunt / Option / Fact / Evidence / Unknown / VerificationTask / Criterion / DecisionEvent v2 领域模型，以及独立的 `state-v2.json` 迁移与回退读取层。
-- 下一步：将 `AppStore` 与页面读取路径切换至 v2 状态，并补齐 Unknown Engine。
-- 验证证据：iPhone 16e Simulator 构建通过；`DecisionModelMigrationTests` 5 项通过，覆盖字段/媒体/历史保留、未知费用、检查状态、重复读取与写入失败回退。
+- 已完成：`AppStore` 已改为读取、保存 v2 状态，并通过兼容投影维持旧页面可运行；旧版照片、看房证据、城市、成本与历史事件均保留。
+- 下一步：重组为“选房 / 对比 / 待确认”导航，接入 Hunt Home、Unknown Engine 与 Quick Capture。
+- 验证证据：iPhone 16e Simulator 构建通过；单元测试 13 项、UI 测试 3 项通过。覆盖 v1 迁移、v2 读取幂等、写入失败回退、兼容投影与既有核心交互。
 
 ## 待办
 

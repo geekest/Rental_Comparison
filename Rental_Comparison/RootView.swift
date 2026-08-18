@@ -152,5 +152,5 @@ private struct TaskSettingsView: View {
 
 #Preview {
     RootView()
-        .environment(AppStore(persistence: .init(load: { nil }, save: { _ in }), useFixtures: true))
+        .environment(AppStore(persistence: .init(loadV2: { nil }, loadV1: { nil }, saveV2: { _ in }), useFixtures: true))
 }

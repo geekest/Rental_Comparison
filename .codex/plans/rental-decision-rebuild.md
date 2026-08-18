@@ -41,7 +41,7 @@ v2 使用 Hunt、Option、Fact、Evidence、Unknown、VerificationTask、Criteri
 
 - [x] 阅读附带重建计划、仓库规则和 v1 实现。
 - [x] Phase 0：更新 v2 权威文档、规格和迁移 ADR。
-- [ ] Phase 1：v2 模型、迁移与存储测试（领域、迁移器与失败回退已完成；AppStore 尚待切换至 v2）。
+- [x] Phase 1：v2 模型、迁移与存储测试；`AppStore` 已切换至 v2，并通过兼容投影维持既有页面。
 - [ ] Phase 2-3：导航、Hunt Home 与 Quick Capture。
 - [ ] Phase 4-7：未知项、验证、差异比较与最终决策。
 - [ ] Phase 8-10：全球化、全量验证与真机验收。
@@ -52,6 +52,7 @@ v2 使用 Hunt、Option、Fact、Evidence、Unknown、VerificationTask、Criteri
 - v1 已经把媒体独立保存在 `Media/`，可复用该目录并仅迁移引用。
 - v1 的格式化工具固定 `zh_CN`，需在 Phase 8 改为系统 Locale；在此之前不得宣称全球化完成。
 - v2 文件必须加入 Xcode Target；首次生成工程后发现新增源文件误落在仓库根目录，已移入正确目录并重新生成工程。后续以实际参与编译的 `project.pbxproj` 为准。
+- 在 Phase 2 完成前，旧页面的编辑操作会经兼容投影重建 v2 状态；因此必须优先迁移新页面，避免在过渡期新增只存在于 v2 的编辑能力。
 
 ## 9. 决策记录
 
@@ -67,6 +68,7 @@ v2 使用 Hunt、Option、Fact、Evidence、Unknown、VerificationTask、Criteri
 
 - 每个 Phase 运行 `git diff --check`、iOS Debug build 与相关 XCTest/XCUITest。
 - Phase 1 额外验证 v1 迁移、幂等、媒体和失败回退。
+- 已完成 Phase 1 验证：iPhone 16e Simulator 单元测试 13 项、UI 测试 3 项全部通过。
 - 完成 P0 后运行完整 `xcodebuild test`，并在 iPhone 16e Simulator 检查选房、对比、待确认和最终确认。
 - 真机前不将 Simulator 验证表述为真机证据。
 

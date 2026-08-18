@@ -4,21 +4,34 @@ import Observation
 @MainActor
 @Observable
 final class AppStore {
-    private(set) var state: AppState
+    private(set) var state: DecisionAppState
     private(set) var saveError: String?
-    let persistence: PersistenceClient
+    let persistence: DecisionPersistenceClient
 
-    init(persistence: PersistenceClient = .live, useFixtures: Bool = ProcessInfo.processInfo.arguments.contains("-uiTesting")) {
+    init(persistence: DecisionPersistenceClient = .live, useFixtures: Bool = ProcessInfo.processInfo.arguments.contains("-uiTesting")) {
         self.persistence = persistence
+        saveError = nil
         if useFixtures {
-            state = Fixtures.initialState
+            state = DecisionModelMigration.migrate(Fixtures.initialState)
             state.privacyAcknowledged = true
         } else {
-            state = (try? persistence.load()) ?? Fixtures.initialState
+            do {
+                if let loaded = try DecisionPersistenceClient.loadOrMigrate(using: persistence) {
+                    state = loaded.state
+                    if case let .v1Fallback(message) = loaded.source {
+                        saveError = "已暂时读取旧数据，但升级保存失败：\(message)"
+                    }
+                } else {
+                    state = DecisionModelMigration.migrate(Fixtures.initialState)
+                }
+            } catch {
+                state = DecisionModelMigration.migrate(Fixtures.initialState)
+                saveError = "读取本地数据失败：\(error.localizedDescription)"
+            }
         }
     }
 
-    var task: RentalTask { state.task }
+    var task: RentalTask { DecisionLegacyProjection.task(from: state) }
     var candidateListings: [Listing] { task.listings.filter { $0.status == .candidate } }
     var comparisonListings: [Listing] { DecisionEngine.comparisonListings(in: task) }
 
@@ -28,8 +41,10 @@ final class AppStore {
     }
 
     func updateTask(_ change: (inout RentalTask) -> Void) {
-        change(&state.task)
-        DecisionEngine.normalize(&state.task)
+        var legacyTask = task
+        change(&legacyTask)
+        DecisionEngine.normalize(&legacyTask)
+        state = DecisionModelMigration.migrate(.init(privacyAcknowledged: state.privacyAcknowledged, task: legacyTask))
         persist()
     }
 
@@ -93,7 +108,7 @@ final class AppStore {
     }
 
     func resetToFixtures() {
-        state = Fixtures.initialState
+        state = DecisionModelMigration.migrate(Fixtures.initialState)
         persist()
     }
 
@@ -103,7 +118,7 @@ final class AppStore {
 
     private func persist() {
         do {
-            try persistence.save(state)
+            try persistence.saveV2(state)
             saveError = nil
         } catch {
             saveError = "保存失败：\(error.localizedDescription)"

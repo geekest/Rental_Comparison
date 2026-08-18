@@ -11,6 +11,7 @@
 		04382F3AD864554DA8F206F2 /* ConditionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87D82B19B8B61938B2618AAE /* ConditionsView.swift */; };
 		045968097BC606FA337466ED /* RentalComparisonApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A60F71C76654445BCD736A5 /* RentalComparisonApp.swift */; };
 		0585A7730A31129965AFAD01 /* ListingEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FAEC0BD9C13D2489E489D70 /* ListingEditorView.swift */; };
+		0D42FE0975D6D11AF7973736 /* DecisionLegacyProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4614FEA9C37987DC185C329 /* DecisionLegacyProjection.swift */; };
 		25A2F25DC8B0B465709A5C13 /* ReportBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01CB5A970DCA0EA5C07FD5D1 /* ReportBuilder.swift */; };
 		28897A8C204092AEF19211F9 /* ComparisonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA8D1416119ACEF8093016D5 /* ComparisonView.swift */; };
 		28F7CE4DBCCC71143911A95A /* DecisionEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3250619863214D1828152FD5 /* DecisionEngineTests.swift */; };
@@ -24,6 +25,7 @@
 		A3E8488C77FB8F24F1196548 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86E02A1D310A22BD3FE6249 /* RootView.swift */; };
 		AE635B0A7B3D05487CA36C37 /* DecisionPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2847635CDE29FA162CB880A /* DecisionPersistence.swift */; };
 		B53CC155C954409108A8A41E /* DecisionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF30EFDD39D4C90A7B37618A /* DecisionEngine.swift */; };
+		D175ED9EECBCC7580DC97AF6 /* DecisionLegacyProjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1C09C66DFEED2BAB1BDE6F /* DecisionLegacyProjectionTests.swift */; };
 		E5678A88D5A146DA6B9B4222 /* ListingImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616280B477221429245E9C4D /* ListingImageView.swift */; };
 		EF9891E9A6FB9EBA05B62A52 /* DecisionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F64629542B49FDC340DDC1 /* DecisionModels.swift */; };
 		F0BB5E3317E865FB70F969B3 /* RentalComparisonUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C167F50290B75FC05E826D73 /* RentalComparisonUITests.swift */; };
@@ -66,8 +68,10 @@
 		9A60F71C76654445BCD736A5 /* RentalComparisonApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RentalComparisonApp.swift; sourceTree = "<group>"; };
 		A12E4C9C70EA93F0FC957A89 /* Rental_ComparisonTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = Rental_ComparisonTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AC730BA4DF841695403BA278 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
+		B4614FEA9C37987DC185C329 /* DecisionLegacyProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionLegacyProjection.swift; sourceTree = "<group>"; };
 		C167F50290B75FC05E826D73 /* RentalComparisonUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RentalComparisonUITests.swift; sourceTree = "<group>"; };
 		C5F8287762F282425D41A8D9 /* DecisionModelMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionModelMigrationTests.swift; sourceTree = "<group>"; };
+		DA1C09C66DFEED2BAB1BDE6F /* DecisionLegacyProjectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionLegacyProjectionTests.swift; sourceTree = "<group>"; };
 		DD7CE0F753F35329F1E8AA54 /* listings */ = {isa = PBXFileReference; lastKnownFileType = folder; name = listings; path = web_version/public/assets/listings; sourceTree = SOURCE_ROOT; };
 		E793CEC747168D939A44157D /* Fixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fixtures.swift; sourceTree = "<group>"; };
 		F2847635CDE29FA162CB880A /* DecisionPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionPersistence.swift; sourceTree = "<group>"; };
@@ -93,6 +97,7 @@
 				FA8D1416119ACEF8093016D5 /* ComparisonView.swift */,
 				87D82B19B8B61938B2618AAE /* ConditionsView.swift */,
 				FF30EFDD39D4C90A7B37618A /* DecisionEngine.swift */,
+				B4614FEA9C37987DC185C329 /* DecisionLegacyProjection.swift */,
 				6E105BCD31E8C5D82A2F90B0 /* DecisionModelMigration.swift */,
 				64F64629542B49FDC340DDC1 /* DecisionModels.swift */,
 				F2847635CDE29FA162CB880A /* DecisionPersistence.swift */,
@@ -115,6 +120,7 @@
 			children = (
 				17636226EEB69ACF30736B92 /* .gitkeep */,
 				3250619863214D1828152FD5 /* DecisionEngineTests.swift */,
+				DA1C09C66DFEED2BAB1BDE6F /* DecisionLegacyProjectionTests.swift */,
 				C5F8287762F282425D41A8D9 /* DecisionModelMigrationTests.swift */,
 			);
 			path = Rental_ComparisonTests;
@@ -250,6 +256,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				28F7CE4DBCCC71143911A95A /* DecisionEngineTests.swift in Sources */,
+				D175ED9EECBCC7580DC97AF6 /* DecisionLegacyProjectionTests.swift in Sources */,
 				91D14A1C692B6E9E4B0C82B6 /* DecisionModelMigrationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -262,6 +269,7 @@
 				28897A8C204092AEF19211F9 /* ComparisonView.swift in Sources */,
 				04382F3AD864554DA8F206F2 /* ConditionsView.swift in Sources */,
 				B53CC155C954409108A8A41E /* DecisionEngine.swift in Sources */,
+				0D42FE0975D6D11AF7973736 /* DecisionLegacyProjection.swift in Sources */,
 				02A4C48BAFB91BBDFCFBCCB6 /* DecisionModelMigration.swift in Sources */,
 				EF9891E9A6FB9EBA05B62A52 /* DecisionModels.swift in Sources */,
 				AE635B0A7B3D05487CA36C37 /* DecisionPersistence.swift in Sources */,
