@@ -70,8 +70,8 @@
 - [x] 生成并审阅默认与暗黑源图。
 - [x] 接入 Asset Catalog 并重新生成 Xcode 工程。
 - [x] 运行资源、构建与测试验证。
-- [ ] 审查 diff、提交、推送并创建 PR。
-- [ ] 完成复盘。
+- [x] 审查 diff、提交、推送并创建 PR。
+- [x] 完成复盘。
 
 ## 8. 新发现与意外情况
 
@@ -112,7 +112,7 @@
 
 ## 12. 最终结果与复盘
 
-- 实际完成：新增用户选定的双拱居所图标，默认版使用浅蓝背景、蓝色与珊瑚色前景；暗黑版使用深海军蓝背景并保持相同几何结构。
+- 实际完成：新增用户选定的双拱居所图标，默认版使用浅蓝背景、蓝色与珊瑚色前景；暗黑版使用深海军蓝背景并保持相同几何结构。已在 `codex/app-icon-design` 推送并创建 Draft PR #12。
 - 修改文件：新增 `Rental_Comparison/Assets.xcassets/`，并由 XcodeGen 更新 `Rental_Comparison.xcodeproj/project.pbxproj`；本计划随 PR 一并交付。
 - 验证：`jq empty`、`sips` 尺寸检查、`xcodegen generate`、`xcodebuild build`、`assetutil --info`、`xcodebuild test` 均成功。业务单测 7 个与 UI 测试 2 个均通过。
 - 未验证：未在真实 iPhone Home Screen 手动切换 Dark App Icon；iOS 17 不显示该 Home Screen 外观，新系统会使用编译出的 Dark 资源。
