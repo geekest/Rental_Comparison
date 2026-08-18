@@ -39,8 +39,8 @@ struct ConditionsView: View {
                 }
             }
         }
-        .navigationTitle("条件")
-        .toolbar { Button("添加条件", systemImage: "plus") { showingAdd = true } }
+        .navigationTitle("选房重点")
+        .toolbar { Button("添加重点", systemImage: "plus") { showingAdd = true } }
         .alert("添加自定义条件", isPresented: $showingAdd) {
             TextField("条件名称", text: $newConditionName)
             Button("取消", role: .cancel) { newConditionName = "" }

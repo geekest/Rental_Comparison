@@ -10,14 +10,14 @@ final class RentalComparisonUITests: XCTestCase {
         app.launch()
     }
 
-    func testMainTabsOpenCoreScreens() {
+    func testMainTabsOpenDecisionScreens() {
         XCTAssertTrue(app.staticTexts["上海租房计划"].waitForExistence(timeout: 8))
         app.tabBars.buttons["对比"].tap()
         XCTAssertTrue(app.navigationBars["比较房源"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["真实成本"].exists)
-        app.tabBars.buttons["条件"].tap()
-        XCTAssertTrue(app.navigationBars["条件"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["月均居住成本不超过 ¥9,500"].exists)
+        app.tabBars.buttons["待确认"].tap()
+        XCTAssertTrue(app.navigationBars["待确认"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["下一次需要确认"].exists)
     }
 
     func testAddListingSheetHasRequiredFields() {
@@ -39,7 +39,7 @@ final class RentalComparisonUITests: XCTestCase {
 
         comparisonButton.tap()
         XCTAssertEqual(comparisonButton.label, "已加入对比")
-        XCTAssertTrue(app.staticTexts["8 / 18 楼"].exists)
+        XCTAssertTrue(app.staticTexts["费用待确认"].exists)
 
         let card = app.otherElements["listingCard_\(listingID)"]
         XCTAssertTrue(card.waitForExistence(timeout: 3))

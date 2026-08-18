@@ -42,7 +42,8 @@ v2 使用 Hunt、Option、Fact、Evidence、Unknown、VerificationTask、Criteri
 - [x] 阅读附带重建计划、仓库规则和 v1 实现。
 - [x] Phase 0：更新 v2 权威文档、规格和迁移 ADR。
 - [x] Phase 1：v2 模型、迁移与存储测试；`AppStore` 已切换至 v2，并通过兼容投影维持既有页面。
-- [ ] Phase 2-3：导航、Hunt Home 与 Quick Capture。
+- [x] Phase 2：导航与 Hunt Home；一级导航改为选房 / 对比 / 待确认，补充 Readiness、Next Action 与待确认聚合页。
+- [ ] Phase 3：Quick Capture 与 Progressive Detail。
 - [ ] Phase 4-7：未知项、验证、差异比较与最终决策。
 - [ ] Phase 8-10：全球化、全量验证与真机验收。
 - [ ] 完成最终复盘。
@@ -53,6 +54,7 @@ v2 使用 Hunt、Option、Fact、Evidence、Unknown、VerificationTask、Criteri
 - v1 的格式化工具固定 `zh_CN`，需在 Phase 8 改为系统 Locale；在此之前不得宣称全球化完成。
 - v2 文件必须加入 Xcode Target；首次生成工程后发现新增源文件误落在仓库根目录，已移入正确目录并重新生成工程。后续以实际参与编译的 `project.pbxproj` 为准。
 - 在 Phase 2 完成前，旧页面的编辑操作会经兼容投影重建 v2 状态；因此必须优先迁移新页面，避免在过渡期新增只存在于 v2 的编辑能力。
+- XcodeBuildMCP 的 Simulator 连接器未继承当前机器的 Xcode 路径，无法直接启动；已改用同一 iPhone 16e 的 `xcodebuild` / XCTest 验证。连接器问题不影响项目构建与测试结果，但本阶段未取得可用的连接器 UI 快照。
 
 ## 9. 决策记录
 

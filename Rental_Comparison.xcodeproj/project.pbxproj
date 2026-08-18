@@ -15,16 +15,19 @@
 		25A2F25DC8B0B465709A5C13 /* ReportBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01CB5A970DCA0EA5C07FD5D1 /* ReportBuilder.swift */; };
 		28897A8C204092AEF19211F9 /* ComparisonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA8D1416119ACEF8093016D5 /* ComparisonView.swift */; };
 		28F7CE4DBCCC71143911A95A /* DecisionEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3250619863214D1828152FD5 /* DecisionEngineTests.swift */; };
+		3849523CB1C16FF0EBE6A0A7 /* DecisionReadinessEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE4E4B4CD70D11ED694EC9B /* DecisionReadinessEngine.swift */; };
 		5D0F36AC72FA7DA76784A5C9 /* ListingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AE38A57F4BB849F42123451 /* ListingsView.swift */; };
 		644ACF2B02058C8EC9F299ED /* ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30F51AA364A7F1765BD0F332 /* ResultView.swift */; };
 		6CB55238845A8E91086C07BD /* listings in Resources */ = {isa = PBXBuildFile; fileRef = DD7CE0F753F35329F1E8AA54 /* listings */; };
 		8A1E42B74429B861482C51A9 /* Fixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = E793CEC747168D939A44157D /* Fixtures.swift */; };
 		91D14A1C692B6E9E4B0C82B6 /* DecisionModelMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5F8287762F282425D41A8D9 /* DecisionModelMigrationTests.swift */; };
 		9401A08EF0815F3B978150EE /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80DFA460A95EBFEE8F10B95B /* AppStore.swift */; };
+		9BE975B93BC5869D27D52127 /* VerifyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57BDF303282788C8835AA3FA /* VerifyView.swift */; };
 		A308110931DF20018F342763 /* InspectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4485C55DBBC1A1446182AF6B /* InspectionView.swift */; };
 		A3E8488C77FB8F24F1196548 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86E02A1D310A22BD3FE6249 /* RootView.swift */; };
 		AE635B0A7B3D05487CA36C37 /* DecisionPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2847635CDE29FA162CB880A /* DecisionPersistence.swift */; };
 		B53CC155C954409108A8A41E /* DecisionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF30EFDD39D4C90A7B37618A /* DecisionEngine.swift */; };
+		B95111085629F410F286FF1C /* DecisionReadinessEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 250B2D604C8FF14D6E6445E5 /* DecisionReadinessEngineTests.swift */; };
 		D175ED9EECBCC7580DC97AF6 /* DecisionLegacyProjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1C09C66DFEED2BAB1BDE6F /* DecisionLegacyProjectionTests.swift */; };
 		E5678A88D5A146DA6B9B4222 /* ListingImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616280B477221429245E9C4D /* ListingImageView.swift */; };
 		EF9891E9A6FB9EBA05B62A52 /* DecisionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F64629542B49FDC340DDC1 /* DecisionModels.swift */; };
@@ -54,10 +57,13 @@
 		03584CE9EA9BB325ABF285F9 /* Rental_ComparisonUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = Rental_ComparisonUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FAEC0BD9C13D2489E489D70 /* ListingEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListingEditorView.swift; sourceTree = "<group>"; };
 		17636226EEB69ACF30736B92 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
+		1BE4E4B4CD70D11ED694EC9B /* DecisionReadinessEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionReadinessEngine.swift; sourceTree = "<group>"; };
+		250B2D604C8FF14D6E6445E5 /* DecisionReadinessEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionReadinessEngineTests.swift; sourceTree = "<group>"; };
 		30F51AA364A7F1765BD0F332 /* ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultView.swift; sourceTree = "<group>"; };
 		3250619863214D1828152FD5 /* DecisionEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionEngineTests.swift; sourceTree = "<group>"; };
 		4485C55DBBC1A1446182AF6B /* InspectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectionView.swift; sourceTree = "<group>"; };
 		4AE38A57F4BB849F42123451 /* ListingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListingsView.swift; sourceTree = "<group>"; };
+		57BDF303282788C8835AA3FA /* VerifyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyView.swift; sourceTree = "<group>"; };
 		616280B477221429245E9C4D /* ListingImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListingImageView.swift; sourceTree = "<group>"; };
 		64F64629542B49FDC340DDC1 /* DecisionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionModels.swift; sourceTree = "<group>"; };
 		6DFFB719EF1FAD07F66FACE4 /* Rental_Comparison.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Rental_Comparison.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -101,6 +107,7 @@
 				6E105BCD31E8C5D82A2F90B0 /* DecisionModelMigration.swift */,
 				64F64629542B49FDC340DDC1 /* DecisionModels.swift */,
 				F2847635CDE29FA162CB880A /* DecisionPersistence.swift */,
+				1BE4E4B4CD70D11ED694EC9B /* DecisionReadinessEngine.swift */,
 				E793CEC747168D939A44157D /* Fixtures.swift */,
 				4485C55DBBC1A1446182AF6B /* InspectionView.swift */,
 				0FAEC0BD9C13D2489E489D70 /* ListingEditorView.swift */,
@@ -111,6 +118,7 @@
 				01CB5A970DCA0EA5C07FD5D1 /* ReportBuilder.swift */,
 				30F51AA364A7F1765BD0F332 /* ResultView.swift */,
 				F86E02A1D310A22BD3FE6249 /* RootView.swift */,
+				57BDF303282788C8835AA3FA /* VerifyView.swift */,
 			);
 			path = Rental_Comparison;
 			sourceTree = "<group>";
@@ -122,6 +130,7 @@
 				3250619863214D1828152FD5 /* DecisionEngineTests.swift */,
 				DA1C09C66DFEED2BAB1BDE6F /* DecisionLegacyProjectionTests.swift */,
 				C5F8287762F282425D41A8D9 /* DecisionModelMigrationTests.swift */,
+				250B2D604C8FF14D6E6445E5 /* DecisionReadinessEngineTests.swift */,
 			);
 			path = Rental_ComparisonTests;
 			sourceTree = "<group>";
@@ -258,6 +267,7 @@
 				28F7CE4DBCCC71143911A95A /* DecisionEngineTests.swift in Sources */,
 				D175ED9EECBCC7580DC97AF6 /* DecisionLegacyProjectionTests.swift in Sources */,
 				91D14A1C692B6E9E4B0C82B6 /* DecisionModelMigrationTests.swift in Sources */,
+				B95111085629F410F286FF1C /* DecisionReadinessEngineTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -273,6 +283,7 @@
 				02A4C48BAFB91BBDFCFBCCB6 /* DecisionModelMigration.swift in Sources */,
 				EF9891E9A6FB9EBA05B62A52 /* DecisionModels.swift in Sources */,
 				AE635B0A7B3D05487CA36C37 /* DecisionPersistence.swift in Sources */,
+				3849523CB1C16FF0EBE6A0A7 /* DecisionReadinessEngine.swift in Sources */,
 				8A1E42B74429B861482C51A9 /* Fixtures.swift in Sources */,
 				A308110931DF20018F342763 /* InspectionView.swift in Sources */,
 				0585A7730A31129965AFAD01 /* ListingEditorView.swift in Sources */,
@@ -283,6 +294,7 @@
 				25A2F25DC8B0B465709A5C13 /* ReportBuilder.swift in Sources */,
 				644ACF2B02058C8EC9F299ED /* ResultView.swift in Sources */,
 				A3E8488C77FB8F24F1196548 /* RootView.swift in Sources */,
+				9BE975B93BC5869D27D52127 /* VerifyView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

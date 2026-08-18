@@ -3,6 +3,7 @@ import SwiftUI
 struct ListingsView: View {
     @Environment(AppStore.self) private var store
     @Binding var showingTaskSettings: Bool
+    let onSelectTab: (AppTab) -> Void
     @State private var showingAdd = false
     @State private var limitMessage: String?
     @State private var selectedListingID: UUID?
@@ -14,22 +15,34 @@ struct ListingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(store.task.completed ? "已完成" : "正在整理")
+                    Text(store.task.completed ? "决策已完成" : "当前选房任务")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.blue)
                     Text(store.task.title)
                         .font(.largeTitle.bold())
-                    Text("\(candidates.count) 套候选 · \(candidates.filter(\.focused).count) 套重点考虑")
+                    Text(summaryText)
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+
+                NextActionCard(action: NextActionEngine.nextAction(in: store.state)) { destination in
+                    switch destination {
+                    case .capture:
+                        showingAdd = true
+                    case .compare, .finalDecision:
+                        onSelectTab(.comparison)
+                    case .verify:
+                        onSelectTab(.verify)
+                    }
+                }
                 .padding(.horizontal)
 
                 if candidates.isEmpty {
                     ContentUnavailableView(
                         "还没有候选房源",
                         systemImage: "house",
-                        description: Text("添加第一套房源，开始统一整理成本、通勤和看房信息。")
+                        description: Text("先记下第一套候选，细节可以在之后按需补充。")
                     )
                     .frame(minHeight: 360)
                 } else {
@@ -95,7 +108,7 @@ struct ListingsView: View {
                     .labelStyle(.iconOnly)
             }
             ToolbarItem(placement: .primaryAction) {
-                Button("添加房源", systemImage: "plus") { showingAdd = true }
+                Button("添加候选", systemImage: "plus") { showingAdd = true }
                     .accessibilityIdentifier("addListingButton")
             }
         }
@@ -108,6 +121,38 @@ struct ListingsView: View {
         } message: { Text(limitMessage ?? "") }
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("listingsScreen")
+    }
+
+    private var summaryText: String {
+        let blockers = DecisionReadinessEngine.huntBlockerCount(in: store.state)
+        let blockerText = blockers == 0 ? "暂无高影响阻塞" : "\(blockers) 个决策阻塞"
+        return "\(store.task.city) · \(candidates.count) 个候选 · \(blockerText)"
+    }
+}
+
+private struct NextActionCard: View {
+    let action: NextAction
+    let onSelect: (NextActionDestination) -> Void
+
+    var body: some View {
+        Button { onSelect(action.destination) } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "arrow.right.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(.blue)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("下一步").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    Text(action.title).font(.headline).foregroundStyle(.primary)
+                    Text(action.detail).font(.subheadline).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .background(.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
 
@@ -142,13 +187,18 @@ private struct ListingCard: View {
                 Label(commuteText.isEmpty ? "通勤" : commuteText, systemImage: listing.commuteMode?.symbol ?? "clock")
                     .opacity(commuteText.isEmpty ? 0 : 1)
                     .accessibilityHidden(commuteText.isEmpty)
-                Label(spaceText, systemImage: "house")
-                Label(floorText.isEmpty ? "楼层" : floorText, systemImage: "building.2")
-                    .opacity(floorText.isEmpty ? 0 : 1)
-                    .accessibilityHidden(floorText.isEmpty)
-                StatusPill(text: "费用待确认", systemImage: "exclamationmark.circle", color: .orange)
-                    .opacity(hasUnknownCosts ? 1 : 0)
-                    .accessibilityHidden(!hasUnknownCosts)
+                HStack(spacing: 8) {
+                    StatusPill(text: readinessText, systemImage: readinessSymbol, color: readinessColor)
+                    if readiness.blockerCount > 0 {
+                        Text("\(readiness.blockerCount) 项阻塞")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.orange)
+                    } else if hasUnknownCosts {
+                        Text("费用待确认")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.orange)
+                    }
+                }
                 HStack(spacing: 12) {
                     Button {
                         if !store.toggleComparison(listing.id) { limitMessage = "一次最多比较 5 套候选房源。" }
@@ -182,34 +232,43 @@ private struct ListingCard: View {
         !DecisionEngine.calculateCosts(for: listing, expectedMonths: store.task.expectedMonths).unknowns.isEmpty
     }
 
+    private var readiness: DecisionReadinessSummary {
+        DecisionReadinessEngine.summary(for: listing.id, in: store.state)
+    }
+
+    private var readinessText: String {
+        switch readiness.status {
+        case .notReady: "尚未就绪"
+        case .needsVerification: "待验证"
+        case .readyWithKnownRisks: "已知风险"
+        case .ready: "可决策"
+        }
+    }
+
+    private var readinessSymbol: String {
+        switch readiness.status {
+        case .notReady: "questionmark.circle"
+        case .needsVerification: "exclamationmark.circle"
+        case .readyWithKnownRisks: "exclamationmark.triangle"
+        case .ready: "checkmark.circle"
+        }
+    }
+
+    private var readinessColor: Color {
+        switch readiness.status {
+        case .notReady: .secondary
+        case .needsVerification: .orange
+        case .readyWithKnownRisks: .orange
+        case .ready: .green
+        }
+    }
+
     private var commuteText: String {
         [listing.commuteMode?.title, listing.commuteMinutes.map { "\($0) 分钟" }]
             .compactMap { $0 }
             .joined(separator: " · ")
     }
 
-    private var spaceText: String {
-        [listing.roomDescription, areaText]
-            .filter { !$0.isEmpty }
-            .joined(separator: "  ")
-    }
-
-    private var floorText: String {
-        guard let floor = listing.floor, !floor.isEmpty else { return "" }
-        let value = floor
-            .replacingOccurrences(of: "楼层", with: "")
-            .replacingOccurrences(of: "层", with: "")
-            .replacingOccurrences(of: "楼", with: "")
-            .trimmingCharacters(in: .whitespaces)
-        return "\(value) 楼"
-    }
-
-    private var areaText: String {
-        guard let area = listing.area else { return "" }
-        return ["\(area.formatted(.number.precision(.fractionLength(0...1)))) ㎡", listing.areaScope]
-            .compactMap { $0 }
-            .joined(separator: " ")
-    }
 }
 
 struct ListingDetailView: View {
