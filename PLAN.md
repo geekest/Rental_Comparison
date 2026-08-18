@@ -1,7 +1,7 @@
 # 租房对比开发看板
 
-> 最后盘点：2026-08-13
-> 当前基线：`34b7eb9`（`main`）
+> 最后盘点：2026-08-19
+> 当前基线：`1393d02`（`codex/ios-card-layout`）
 > 用途：这是产品开发看板，不替代 `docs/specs/` 中已确认的功能规格。每次开始或完成一个需求时，更新对应任务的状态、验收证据和关联文档。
 
 ## 使用约定
@@ -46,6 +46,18 @@
 ## 待确认
 
 - [ ]
+
+## 进行中
+
+### Rental Decision System iOS 重构
+
+- 状态：Phase 0 已完成，准备进入 Phase 1。
+- 目标：将原生 iOS 从房源字段整理流程迁移为围绕事实、证据、未知项、验证任务和 Decision Readiness 的决策系统。
+- 范围：P0 仅覆盖 v1 → v2 本地迁移、选房/对比/待确认导航、Quick Capture、差异优先比较、最终确认和 China Regional Template；不包含服务器、AI、地图、Share Extension 与云同步。
+- 权威文档：`docs/specs/spec_002_decision_readiness_rebuild.md`、`docs/adr/0003_decision_model_v2_migration.md`、`.codex/plans/rental-decision-rebuild.md`。
+- 已完成：更新产品简述、范围、上下文、v2 规格与迁移 ADR；将 v1 SPEC 标记为历史兼容规格。
+- 下一步：实现 Hunt / Option / Fact / Evidence / Unknown / VerificationTask 模型与可恢复的 v1 → v2 JSON 迁移。
+- 验证证据：待 Phase 1 完成后补充模型迁移 XCTest 与 iOS 构建结果。
 
 ## 待办
 
