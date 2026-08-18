@@ -51,13 +51,14 @@
 
 ### Rental Decision System iOS 重构
 
-- 状态：Phase 0 已完成，准备进入 Phase 1。
+- 状态：Phase 1 进行中。
 - 目标：将原生 iOS 从房源字段整理流程迁移为围绕事实、证据、未知项、验证任务和 Decision Readiness 的决策系统。
 - 范围：P0 仅覆盖 v1 → v2 本地迁移、选房/对比/待确认导航、Quick Capture、差异优先比较、最终确认和 China Regional Template；不包含服务器、AI、地图、Share Extension 与云同步。
 - 权威文档：`docs/specs/spec_002_decision_readiness_rebuild.md`、`docs/adr/0003_decision_model_v2_migration.md`、`.codex/plans/rental-decision-rebuild.md`。
 - 已完成：更新产品简述、范围、上下文、v2 规格与迁移 ADR；将 v1 SPEC 标记为历史兼容规格。
-- 下一步：实现 Hunt / Option / Fact / Evidence / Unknown / VerificationTask 模型与可恢复的 v1 → v2 JSON 迁移。
-- 验证证据：待 Phase 1 完成后补充模型迁移 XCTest 与 iOS 构建结果。
+- 已完成：新增 Hunt / Option / Fact / Evidence / Unknown / VerificationTask / Criterion / DecisionEvent v2 领域模型，以及独立的 `state-v2.json` 迁移与回退读取层。
+- 下一步：将 `AppStore` 与页面读取路径切换至 v2 状态，并补齐 Unknown Engine。
+- 验证证据：iPhone 16e Simulator 构建通过；`DecisionModelMigrationTests` 5 项通过，覆盖字段/媒体/历史保留、未知费用、检查状态、重复读取与写入失败回退。
 
 ## 待办
 
