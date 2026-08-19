@@ -23,4 +23,11 @@ final class RegionalTemplateTests: XCTestCase {
 
         XCTAssertNotEqual(dollar, euro)
     }
+
+    func testMoneyFormattingFollowsExplicitLocale() {
+        let english = 1_200.0.formattedMoney(currency: "USD", locale: Locale(identifier: "en_US"))
+        let chinese = 1_200.0.formattedMoney(currency: "USD", locale: Locale(identifier: "zh_CN"))
+
+        XCTAssertNotEqual(english, chinese)
+    }
 }

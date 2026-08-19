@@ -27,6 +27,15 @@ final class QuickCaptureTests: XCTestCase {
         XCTAssertFalse(migrated.facts.contains { $0.optionID == Fixtures.xuhuiID && $0.key == FactKey.monthlyRent })
     }
 
+    func testLocalMediaRoundTripPreservesBytes() throws {
+        let original = Data("local-media-proof".utf8)
+        let mediaID = try PersistenceClient.saveMedia(original)
+        defer { PersistenceClient.deleteMedia([mediaID]) }
+
+        let url = try XCTUnwrap(PersistenceClient.mediaURL(for: mediaID))
+        XCTAssertEqual(try Data(contentsOf: url), original)
+    }
+
     func testQuickCapturePreservesScreenshotEvidenceType() {
         let store = AppStore(persistence: .init(loadV2: { nil }, loadV1: { nil }, saveV2: { _ in }), useFixtures: true)
 

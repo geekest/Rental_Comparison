@@ -49,7 +49,7 @@ v2 使用 Hunt、Option、Fact、Evidence、Unknown、VerificationTask、Criteri
 - [x] Phase 6：Difference-first Compare；先展示硬冲突、关键差异、阻塞项和已知取舍，完整矩阵按需展开。
 - [x] Phase 7：Decision Readiness Gate 与最终决策；最终确认呈现月租/通勤取舍、风险备注、阻塞和逐条事实证据，且不再通过兼容层丢失 v2 状态。
 - [x] Phase 8：地区模板与货币边界；中国大陆默认值仅由模板提供，兼容编辑页的面积单位从模板读取，金额使用系统 Locale 且调用方须传入货币代码，跨币种比较明确提示。
-- [x] Phase 9：完整 XCTest / XCUITest 验证；iPhone 16e Simulator 共 38 项通过，含按候选进入现场验证并一键记录结果的 UI 路径、计划指定 A/B/C 决策场景和重复 Unknown 兼容回归。
+- [x] Phase 9：完整 XCTest / XCUITest 验证；iPhone 16e Simulator 共 40 项通过，含按候选进入现场验证并一键记录结果的 UI 路径、计划指定 A/B/C 决策场景、重复 Unknown、本地媒体和 Locale 兼容回归。
 - [~] Phase 10：真机产品验收；iPhone 17 已构建、安装和启动，尚缺少人工完成核心交互的验收记录。
 - [ ] 完成最终复盘。
 
@@ -80,7 +80,7 @@ v2 使用 Hunt、Option、Fact、Evidence、Unknown、VerificationTask、Criteri
 - 真机前不将 Simulator 验证表述为真机证据。
 - 真机基础证据：2026-08-19，iPhone 17（iOS 26.6.1）使用临时 `DEVELOPMENT_TEAM` 构建、安装、前台启动并保持运行成功；未修改项目签名配置。手工交互尚未验证。
 - 真机自动化限制：使用现有 Team 运行真机测试后，31 个 XCTest 已通过；XCUITest Runner 因免费开发者账号在 iPhone 上 3 个可安装 App 名额已满而无法安装。未删除设备上已有 App，工程签名配置未改写。
-- 2026-08-19 回归：Unknown / Viewing 闭环、v2 合并保护、地区模板边界、截图来源区分和重复 Unknown 去重加入后，iPhone 16e Simulator 完整测试共 38 项通过；A/B/C 场景覆盖 C 硬冲突、A 费用未知与确认、B 噪音观察、最终确认与撤回；iPhone 17 重新构建、安装并启动当前 Debug 包成功。
+- 2026-08-19 回归：Unknown / Viewing 闭环、v2 合并保护、地区模板边界、截图来源区分、重复 Unknown 去重、本地媒体和 Locale 验证加入后，iPhone 16e Simulator 完整测试共 40 项通过；A/B/C 场景覆盖 C 硬冲突、A 费用未知与确认、B 噪音观察、最终确认与撤回；iPhone 17 重新构建、安装并启动当前 Debug 包成功。
 - 视觉验收：通过 iPhone 16e Simulator 的 `simctl screenshot` 检查当前页面，确认 Hunt 首页、阻塞卡片、16:9 图片容器、并列操作按钮和三 Tab 导航实际渲染；`serve-sim` 镜像工具随后因帧捕获器自身执行器错误退出，未将其作为产品失败证据。
 - 后续包安装：A/B/C 场景与合并修复后的最新 Debug 包已成功安装到 iPhone 17；启动请求因设备锁屏被系统拒绝，未将本次安装记录为前台运行证据。
 
