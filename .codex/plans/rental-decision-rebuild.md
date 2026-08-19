@@ -84,6 +84,7 @@ v2 使用 Hunt、Option、Fact、Evidence、Unknown、VerificationTask、Criteri
 - 2026-08-19 追加真机启动复核：设备锁定状态解除后，使用 `devicectl` 启动当前已安装的 `com.geekest.RentalComparison` 成功；该证据仅证明可启动，不替代人工逐项触控验收。
 - 2026-08-19 卡片布局修复：移除 `ListingCard` 图片区域的 `GeometryReader`，改用明确的 16:9 容器配合 `scaledToFill` 裁切；iPhone 16e Simulator 截图确认异常比例图片不会参与卡片高度计算。
 - 2026-08-19 修复后回归：iPhone 16e Simulator 单元测试 36 项、UI 测试 4 项全部通过。
+- 2026-08-19 真机复核修复包：使用临时 `DEVELOPMENT_TEAM=45Q48VG3DF` 构建并安装卡片布局修复包到 iPhone 17；设备状态重新确认后，`devicectl` 启动成功。首次启动请求出现一次系统锁定拒绝，重试后通过；仍未取得人工逐项触控记录。
 - 视觉验收：通过 iPhone 16e Simulator 的 `simctl screenshot` 检查当前页面，确认 Hunt 首页、阻塞卡片、16:9 图片容器、并列操作按钮和三 Tab 导航实际渲染；`serve-sim` 镜像工具随后因帧捕获器自身执行器错误退出，未将其作为产品失败证据。
 - 历史限制：A/B/C 场景与合并修复后的最新 Debug 包曾成功安装到 iPhone 17；一次启动请求因设备锁屏被系统拒绝，随后在设备解锁后已复核启动成功。
 
