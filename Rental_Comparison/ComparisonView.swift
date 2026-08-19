@@ -156,6 +156,7 @@ private struct DifferenceFirstSummary: View {
     let listings: [Listing]
 
     private var monthlyRentRange: ClosedRange<Double>? {
+        guard !hasMixedCurrencies else { return nil }
         let values = listings.map(\.rent).filter { $0 > 0 }
         guard let minimum = values.min(), let maximum = values.max(), minimum != maximum else { return nil }
         return minimum...maximum
@@ -165,6 +166,10 @@ private struct DifferenceFirstSummary: View {
         let values = listings.compactMap(\.commuteMinutes)
         guard let minimum = values.min(), let maximum = values.max(), minimum != maximum else { return nil }
         return minimum...maximum
+    }
+
+    private var hasMixedCurrencies: Bool {
+        Set(listings.map { $0.currency.uppercased() }).count > 1
     }
 
     var body: some View {
@@ -187,6 +192,10 @@ private struct DifferenceFirstSummary: View {
             }
 
             differenceSection("主要差异", symbol: "arrow.left.arrow.right") {
+                if hasMixedCurrencies {
+                    Label("候选使用不同货币，未进行汇率换算", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                }
                 if let monthlyRentRange {
                     Label("月租相差 \((monthlyRentRange.upperBound - monthlyRentRange.lowerBound).formattedMoney(currency: store.task.currency))", systemImage: "yensign.circle")
                 }

@@ -30,6 +30,7 @@
 		9BE975B93BC5869D27D52127 /* VerifyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57BDF303282788C8835AA3FA /* VerifyView.swift */; };
 		A308110931DF20018F342763 /* InspectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4485C55DBBC1A1446182AF6B /* InspectionView.swift */; };
 		A3E8488C77FB8F24F1196548 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86E02A1D310A22BD3FE6249 /* RootView.swift */; };
+		AD31980CD0EBAF2CE98B5F73 /* RegionalTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11D0EFD51923F5A9151E5E85 /* RegionalTemplate.swift */; };
 		AE635B0A7B3D05487CA36C37 /* DecisionPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2847635CDE29FA162CB880A /* DecisionPersistence.swift */; };
 		B53CC155C954409108A8A41E /* DecisionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF30EFDD39D4C90A7B37618A /* DecisionEngine.swift */; };
 		B95111085629F410F286FF1C /* DecisionReadinessEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 250B2D604C8FF14D6E6445E5 /* DecisionReadinessEngineTests.swift */; };
@@ -40,6 +41,7 @@
 		EF9891E9A6FB9EBA05B62A52 /* DecisionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F64629542B49FDC340DDC1 /* DecisionModels.swift */; };
 		F0BB5E3317E865FB70F969B3 /* RentalComparisonUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C167F50290B75FC05E826D73 /* RentalComparisonUITests.swift */; };
 		F48FBCCD696C53F3B7FA975A /* UnknownEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C45EDAFC76BE34BE667DB3FE /* UnknownEngine.swift */; };
+		FE095BD1C57D307CDFB91B6E /* RegionalTemplateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBBE1CC4C54A59489DEFF2D4 /* RegionalTemplateTests.swift */; };
 		FEED2D82F3194A5607D40EA2 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 758395FDB7838D950701CAE9 /* Models.swift */; };
 /* End PBXBuildFile section */
 
@@ -65,6 +67,7 @@
 		03584CE9EA9BB325ABF285F9 /* Rental_ComparisonUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = Rental_ComparisonUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		06F1777E5EB229FA068EA224 /* VerificationTaskEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerificationTaskEngineTests.swift; sourceTree = "<group>"; };
 		0FAEC0BD9C13D2489E489D70 /* ListingEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListingEditorView.swift; sourceTree = "<group>"; };
+		11D0EFD51923F5A9151E5E85 /* RegionalTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionalTemplate.swift; sourceTree = "<group>"; };
 		17636226EEB69ACF30736B92 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		1BE4E4B4CD70D11ED694EC9B /* DecisionReadinessEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionReadinessEngine.swift; sourceTree = "<group>"; };
 		250B2D604C8FF14D6E6445E5 /* DecisionReadinessEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionReadinessEngineTests.swift; sourceTree = "<group>"; };
@@ -86,6 +89,7 @@
 		A12E4C9C70EA93F0FC957A89 /* Rental_ComparisonTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = Rental_ComparisonTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AC730BA4DF841695403BA278 /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
 		B4614FEA9C37987DC185C329 /* DecisionLegacyProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionLegacyProjection.swift; sourceTree = "<group>"; };
+		BBBE1CC4C54A59489DEFF2D4 /* RegionalTemplateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionalTemplateTests.swift; sourceTree = "<group>"; };
 		C167F50290B75FC05E826D73 /* RentalComparisonUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RentalComparisonUITests.swift; sourceTree = "<group>"; };
 		C45EDAFC76BE34BE667DB3FE /* UnknownEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnknownEngine.swift; sourceTree = "<group>"; };
 		C5F8287762F282425D41A8D9 /* DecisionModelMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionModelMigrationTests.swift; sourceTree = "<group>"; };
@@ -131,6 +135,7 @@
 				4AE38A57F4BB849F42123451 /* ListingsView.swift */,
 				758395FDB7838D950701CAE9 /* Models.swift */,
 				F443AE82A5CE9733C8E9BD6E /* QuickCaptureView.swift */,
+				11D0EFD51923F5A9151E5E85 /* RegionalTemplate.swift */,
 				9A60F71C76654445BCD736A5 /* RentalComparisonApp.swift */,
 				01CB5A970DCA0EA5C07FD5D1 /* ReportBuilder.swift */,
 				30F51AA364A7F1765BD0F332 /* ResultView.swift */,
@@ -153,6 +158,7 @@
 				250B2D604C8FF14D6E6445E5 /* DecisionReadinessEngineTests.swift */,
 				2E807A87E3AC281AA0A62853 /* FinalDecisionTests.swift */,
 				D397D1F55CA75C7775A12D3F /* QuickCaptureTests.swift */,
+				BBBE1CC4C54A59489DEFF2D4 /* RegionalTemplateTests.swift */,
 				68D6B413072FBD79DCCA0AA2 /* UnknownEngineTests.swift */,
 				06F1777E5EB229FA068EA224 /* VerificationTaskEngineTests.swift */,
 			);
@@ -294,6 +300,7 @@
 				B95111085629F410F286FF1C /* DecisionReadinessEngineTests.swift in Sources */,
 				24D333F6A0D3E5152811EE3B /* FinalDecisionTests.swift in Sources */,
 				890C485099D1D82E26FE6039 /* QuickCaptureTests.swift in Sources */,
+				FE095BD1C57D307CDFB91B6E /* RegionalTemplateTests.swift in Sources */,
 				D5E6ADACA2D123880A007500 /* UnknownEngineTests.swift in Sources */,
 				40F3C0EE30BB4986A9865231 /* VerificationTaskEngineTests.swift in Sources */,
 			);
@@ -319,6 +326,7 @@
 				5D0F36AC72FA7DA76784A5C9 /* ListingsView.swift in Sources */,
 				FEED2D82F3194A5607D40EA2 /* Models.swift in Sources */,
 				BE8EEEE9B0BB7AD4734D99F3 /* QuickCaptureView.swift in Sources */,
+				AD31980CD0EBAF2CE98B5F73 /* RegionalTemplate.swift in Sources */,
 				045968097BC606FA337466ED /* RentalComparisonApp.swift in Sources */,
 				25A2F25DC8B0B465709A5C13 /* ReportBuilder.swift in Sources */,
 				644ACF2B02058C8EC9F299ED /* ResultView.swift in Sources */,

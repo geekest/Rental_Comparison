@@ -48,7 +48,9 @@ v2 使用 Hunt、Option、Fact、Evidence、Unknown、VerificationTask、Criteri
 - [x] Phase 5：VerificationTask 与 Viewing Mode；Unknown 自动生成任务，任务结果可保存照片、关闭 Unknown 并记录事件。
 - [x] Phase 6：Difference-first Compare；先展示硬冲突、关键差异、阻塞项和已知取舍，完整矩阵按需展开。
 - [x] Phase 7：Decision Readiness Gate 与最终决策；最终确认呈现风险、阻塞和证据，且不再通过兼容层丢失 v2 状态。
-- [ ] Phase 8-10：全球化、全量验证与真机验收。
+- [x] Phase 8：地区模板与货币边界；中国大陆默认值仅由模板提供，金额使用系统 Locale，跨币种比较明确提示。
+- [ ] Phase 9：完整 XCTest / XCUITest 验证。
+- [ ] Phase 10：真机产品验收。
 - [ ] 完成最终复盘。
 
 ## 8. 新发现与意外情况
