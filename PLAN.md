@@ -51,7 +51,7 @@
 
 ### Rental Decision System iOS 重构
 
-- 状态：Phase 5 已完成，准备进入 Phase 6。
+- 状态：Phase 7 已完成，准备进入 Phase 8。
 - 目标：将原生 iOS 从房源字段整理流程迁移为围绕事实、证据、未知项、验证任务和 Decision Readiness 的决策系统。
 - 范围：P0 仅覆盖 v1 → v2 本地迁移、选房/对比/待确认导航、Quick Capture、差异优先比较、最终确认和 China Regional Template；不包含服务器、AI、地图、Share Extension 与云同步。
 - 权威文档：`docs/specs/spec_002_decision_readiness_rebuild.md`、`docs/adr/0003_decision_model_v2_migration.md`、`.codex/plans/rental-decision-rebuild.md`。
@@ -62,8 +62,10 @@
 - 已完成：Quick Capture 支持仅凭名称或名称加图片保存候选；月租缺失保持未知；完整字段编辑已降级为详情页入口，关键事实展示来源和确认状态。
 - 已完成：Unknown Engine 识别缺失月租、未确认费用及未知硬性条件，并在候选详情页和首页阻塞数中显式呈现；已确认事实会自动关闭对应系统 Unknown。
 - 已完成：每个打开的 Unknown 自动生成询问或检查任务；验证结果支持现场照片和备注，并在验证完成后关闭关联 Unknown、记录事件和保留证据。
-- 下一步：将对比页改为 Difference-first，先突出硬性冲突、关键差异、阻塞项和已知取舍。
-- 验证证据：iPhone 16e Simulator 构建通过；单元测试 18 项、Unknown Engine 测试 2 项、VerificationTask 测试 2 项通过。
+- 已完成：对比页默认展示硬性冲突、月租/通勤主要差异、决策阻塞项与已知取舍；完整矩阵改为按需展开。
+- 已完成：最终选择使用 Decision Readiness Gate，展示证据覆盖、已知取舍、未解决 blocker 和风险；确认/撤回直接操作 v2 状态，避免丢失验证记录。
+- 下一步：清理 Universal Core 的地区硬编码，补充地区模板与 Locale/货币边界。
+- 验证证据：iPhone 16e Simulator 构建通过；单元测试 18 项、Unknown Engine 测试 2 项、VerificationTask 测试 2 项、Final Decision 测试 1 项通过。
 
 ## 待办
 

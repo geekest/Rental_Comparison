@@ -46,8 +46,8 @@ v2 使用 Hunt、Option、Fact、Evidence、Unknown、VerificationTask、Criteri
 - [x] Phase 3：Quick Capture 与 Progressive Detail；名称可单独保存，缺失月租保持未知，详情页展示事实来源与确认状态。
 - [x] Phase 4：Unknown Engine；高影响费用、月租和硬性条件未知项已显式建模并可自动关闭。
 - [x] Phase 5：VerificationTask 与 Viewing Mode；Unknown 自动生成任务，任务结果可保存照片、关闭 Unknown 并记录事件。
-- [ ] Phase 6：Difference-first Compare。
-- [ ] Phase 7：Decision Readiness Gate 与最终决策。
+- [x] Phase 6：Difference-first Compare；先展示硬冲突、关键差异、阻塞项和已知取舍，完整矩阵按需展开。
+- [x] Phase 7：Decision Readiness Gate 与最终决策；最终确认呈现风险、阻塞和证据，且不再通过兼容层丢失 v2 状态。
 - [ ] Phase 8-10：全球化、全量验证与真机验收。
 - [ ] 完成最终复盘。
 

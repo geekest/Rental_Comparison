@@ -14,7 +14,7 @@ final class RentalComparisonUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["上海租房计划"].waitForExistence(timeout: 8))
         app.tabBars.buttons["对比"].tap()
         XCTAssertTrue(app.navigationBars["比较房源"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["真实成本"].exists)
+        XCTAssertTrue(app.staticTexts["主要差异"].exists)
         app.tabBars.buttons["待确认"].tap()
         XCTAssertTrue(app.navigationBars["待确认"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["下一次需要确认"].exists)

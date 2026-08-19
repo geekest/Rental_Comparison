@@ -139,22 +139,32 @@ final class AppStore {
     }
 
     func confirmFinal(_ id: UUID, reason: String) {
-        updateTask { task in
-            task.finalListingID = id
-            task.finalReason = reason.nilIfBlank
-            task.completed = true
-            task.events.append(.init(type: .confirmed, listingID: id, reason: reason.nilIfBlank))
+        let now = Date.now
+        state.hunt.finalOptionID = id
+        state.hunt.finalReason = reason.nilIfBlank
+        state.hunt.status = .completed
+        state.hunt.updatedAt = now
+        if let index = state.options.firstIndex(where: { $0.id == id }) {
+            state.options[index].decisionState = .final
+            state.options[index].updatedAt = now
         }
+        state.events.append(.init(id: UUID(), type: .confirmed, optionID: id, at: now, reason: reason.nilIfBlank))
+        persist()
     }
 
     func withdrawFinal() {
-        guard let id = task.finalListingID else { return }
-        updateTask { task in
-            task.finalListingID = nil
-            task.finalReason = nil
-            task.completed = false
-            task.events.append(.init(type: .withdrawn, listingID: id))
+        guard let id = state.hunt.finalOptionID else { return }
+        let now = Date.now
+        state.hunt.finalOptionID = nil
+        state.hunt.finalReason = nil
+        state.hunt.status = .active
+        state.hunt.updatedAt = now
+        if let index = state.options.firstIndex(where: { $0.id == id }) {
+            state.options[index].decisionState = .candidate
+            state.options[index].updatedAt = now
         }
+        state.events.append(.init(id: UUID(), type: .withdrawn, optionID: id, at: now, reason: nil))
+        persist()
     }
 
     func resetToFixtures() {
