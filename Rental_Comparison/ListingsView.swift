@@ -164,16 +164,15 @@ private struct ListingCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            GeometryReader { proxy in
-                ZStack(alignment: .topTrailing) {
-                    ListingImageView(listing: listing)
-                    if listing.focused {
-                        StatusPill(text: "重点", systemImage: "star.fill", color: .orange)
-                            .padding(12)
-                    }
+            ZStack(alignment: .topTrailing) {
+                ListingImageView(listing: listing)
+                if listing.focused {
+                    StatusPill(text: "重点", systemImage: "star.fill", color: .orange)
+                        .padding(12)
                 }
-                .frame(width: proxy.size.width, height: proxy.size.height)
             }
+            // 先锁定容器比例，再让图片 fill 并裁切，避免异常比例的原图撑高卡片。
+            .frame(maxWidth: .infinity)
             .aspectRatio(16.0 / 9.0, contentMode: .fit)
             .clipped()
             VStack(alignment: .leading, spacing: 10) {
