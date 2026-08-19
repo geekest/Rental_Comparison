@@ -44,7 +44,7 @@ struct VerifyView: View {
                 Section("下一次需要确认") {
                     ForEach(pendingTasks) { task in
                         NavigationLink {
-                            ListingDetailView(listingID: task.optionID)
+                            VerificationTaskDetailView(taskID: task.id)
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 Label(task.title, systemImage: task.type.symbol)

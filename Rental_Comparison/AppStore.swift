@@ -29,7 +29,7 @@ final class AppStore {
                 saveError = "读取本地数据失败：\(error.localizedDescription)"
             }
         }
-        UnknownEngine.refresh(in: &state)
+        refreshDecisionSupport()
     }
 
     var task: RentalTask { DecisionLegacyProjection.task(from: state) }
@@ -46,7 +46,7 @@ final class AppStore {
         change(&legacyTask)
         DecisionEngine.normalize(&legacyTask)
         state = DecisionModelMigration.migrate(.init(privacyAcknowledged: state.privacyAcknowledged, task: legacyTask))
-        UnknownEngine.refresh(in: &state)
+        refreshDecisionSupport()
         persist()
     }
 
@@ -103,7 +103,7 @@ final class AppStore {
         state.hunt.optionIDs.append(optionID)
         state.hunt.updatedAt = now
         state.events.append(.init(id: UUID(), type: .captured, optionID: optionID, at: now, reason: nil))
-        UnknownEngine.refresh(in: &state, now: now)
+        refreshDecisionSupport(now: now)
         persist()
         return optionID
     }
@@ -159,12 +159,40 @@ final class AppStore {
 
     func resetToFixtures() {
         state = DecisionModelMigration.migrate(Fixtures.initialState)
-        UnknownEngine.refresh(in: &state)
+        refreshDecisionSupport()
         persist()
     }
 
     func clearSaveError() {
         saveError = nil
+    }
+
+    func completeVerificationTask(_ taskID: UUID, state taskState: VerificationTaskState, result: String?, photoIDs: [String]) {
+        guard let index = state.verificationTasks.firstIndex(where: { $0.id == taskID }) else { return }
+        let now = Date.now
+        let normalizedResult = result?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfBlank
+        let optionID = state.verificationTasks[index].optionID
+        let evidence = photoIDs.map {
+            Evidence(id: UUID(), optionID: optionID, type: .photo, mediaID: $0, bundledAssetName: nil, text: nil, sourceURL: nil, capturedAt: now)
+        }
+        state.evidence.append(contentsOf: evidence)
+        state.verificationTasks[index].state = taskState
+        state.verificationTasks[index].result = normalizedResult
+        state.verificationTasks[index].evidenceIDs.append(contentsOf: evidence.map(\.id))
+        if let unknownID = state.verificationTasks[index].unknownID,
+           taskState == .verified || taskState == .issue,
+           let unknownIndex = state.unknowns.firstIndex(where: { $0.id == unknownID }) {
+            state.unknowns[unknownIndex].status = .resolved
+            state.unknowns[unknownIndex].resolvedAt = now
+        }
+        state.events.append(.init(id: UUID(), type: .verificationCompleted, optionID: optionID, at: now, reason: normalizedResult))
+        refreshDecisionSupport(now: now)
+        persist()
+    }
+
+    private func refreshDecisionSupport(now: Date = .now) {
+        UnknownEngine.refresh(in: &state, now: now)
+        VerificationTaskEngine.sync(in: &state)
     }
 
     private func persist() {

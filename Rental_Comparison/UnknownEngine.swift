@@ -11,6 +11,10 @@ enum UnknownEngine {
             guard var current = existing[key] else { return candidate }
             current.impactLevel = candidate.impactLevel
             current.reason = candidate.reason
+            if current.status == .resolved,
+               state.verificationTasks.contains(where: { $0.unknownID == current.id && ($0.state == .verified || $0.state == .issue) }) {
+                return current
+            }
             current.status = .open
             current.resolvedAt = nil
             return current
