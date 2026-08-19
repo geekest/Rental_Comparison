@@ -8,6 +8,7 @@ struct QuickCaptureView: View {
     @State private var rentText = ""
     @State private var selectedPhotos: [PhotosPickerItem] = []
     @State private var photoIDs: [String] = []
+    @State private var mediaEvidenceType: EvidenceType = .screenshot
     @State private var isImportingPhotos = false
     @State private var photoError: String?
 
@@ -39,6 +40,10 @@ struct QuickCaptureView: View {
                 }
 
                 Section("截图或照片（可选）") {
+                    Picker("素材类型", selection: $mediaEvidenceType) {
+                        Text("截图").tag(EvidenceType.screenshot)
+                        Text("照片").tag(EvidenceType.photo)
+                    }
                     PhotosPicker(selection: $selectedPhotos, maxSelectionCount: 8, matching: .images) {
                         Label(photoIDs.isEmpty ? "添加截图或照片" : "已添加 \(photoIDs.count) 张", systemImage: "photo.on.rectangle.angled")
                     }
@@ -55,7 +60,7 @@ struct QuickCaptureView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("保存") {
-                        _ = store.captureOption(name: normalizedName, monthlyRent: monthlyRent, photoIDs: photoIDs)
+                        _ = store.captureOption(name: normalizedName, monthlyRent: monthlyRent, photoIDs: photoIDs, mediaEvidenceType: mediaEvidenceType)
                         dismiss()
                     }
                     .disabled(normalizedName.isEmpty || isImportingPhotos)

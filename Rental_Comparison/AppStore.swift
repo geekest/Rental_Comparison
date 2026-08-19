@@ -62,7 +62,7 @@ final class AppStore {
     }
 
     @discardableResult
-    func captureOption(name: String, monthlyRent: Double?, photoIDs: [String]) -> UUID {
+    func captureOption(name: String, monthlyRent: Double?, photoIDs: [String], mediaEvidenceType: EvidenceType = .photo) -> UUID {
         let now = Date.now
         let optionID = UUID()
         let normalizedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -82,7 +82,7 @@ final class AppStore {
             ))
         }
         let evidence = photoIDs.map {
-            Evidence(id: UUID(), optionID: optionID, type: .photo, mediaID: $0, bundledAssetName: nil, text: nil, sourceURL: nil, capturedAt: now)
+            Evidence(id: UUID(), optionID: optionID, type: mediaEvidenceType, mediaID: $0, bundledAssetName: nil, text: nil, sourceURL: nil, capturedAt: now)
         }
         state.options.append(.init(
             id: optionID,

@@ -69,12 +69,12 @@
 - 已完成：新增 China Mainland Regional Template 与 Manual Provider Adapter 接口；金额格式跟随系统 Locale；跨币种候选明确提示而不静默换算。
 - 已完成：兼容编辑页的面积单位从当前地区模板读取；金额格式要求调用方显式提供 ISO 货币代码，避免核心层隐式使用 CNY。
 - 已完成：最终确认页逐条展示已确认/现场观察事实的来源和状态，并同时呈现与参考候选的月租、通勤取舍及风险备注。
-- 已完成：完整 XCTest / XCUITest 在 iPhone 16e Simulator 通过，共 34 项。
+- 已完成：Quick Capture 可明确将素材保存为截图或照片 Evidence；完整 XCTest / XCUITest 在 iPhone 16e Simulator 通过，共 35 项。
 - 已完成：支持用户手动添加高影响 Unknown，并自动生成验证任务。
 - 已完成：真实 iPhone 17（iOS 26.6.1）使用临时 Team 签名构建、安装并成功前台启动；工程文件未写入签名配置。
 - 已确认限制：真机 XCTest / XCUITest 因缺少 `com.geekest.RentalComparisonUITests.xctrunner` 的开发描述文件无法启动；自动创建描述文件会改动 Apple 开发者账号资源，未执行。
 - 下一步：在真实 iPhone 手工完成“快速捕获 → 验证 → 对比 → 最终选择”交互验收；当前仅证明真机可安装、启动并保持运行。
-- 验证证据：iPhone 16e Simulator 完整 `xcodebuild test` 通过，共 34 项；iPhone 17 已重新构建、安装、启动并保持运行。覆盖范围与限制已分别记录。
+- 验证证据：iPhone 16e Simulator 完整 `xcodebuild test` 通过，共 35 项；iPhone 17 已重新构建、安装、启动并保持运行。覆盖范围与限制已分别记录。
 
 ## 待办
 

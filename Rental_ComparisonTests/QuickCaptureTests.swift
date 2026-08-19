@@ -26,4 +26,14 @@ final class QuickCaptureTests: XCTestCase {
 
         XCTAssertFalse(migrated.facts.contains { $0.optionID == Fixtures.xuhuiID && $0.key == FactKey.monthlyRent })
     }
+
+    func testQuickCapturePreservesScreenshotEvidenceType() {
+        let store = AppStore(persistence: .init(loadV2: { nil }, loadV1: { nil }, saveV2: { _ in }), useFixtures: true)
+
+        let optionID = store.captureOption(name: "截图候选", monthlyRent: nil, photoIDs: ["capture-screenshot"], mediaEvidenceType: .screenshot)
+
+        XCTAssertTrue(store.state.evidence.contains {
+            $0.optionID == optionID && $0.mediaID == "capture-screenshot" && $0.type == .screenshot
+        })
+    }
 }

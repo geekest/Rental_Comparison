@@ -43,13 +43,13 @@ v2 使用 Hunt、Option、Fact、Evidence、Unknown、VerificationTask、Criteri
 - [x] Phase 0：更新 v2 权威文档、规格和迁移 ADR。
 - [x] Phase 1：v2 模型、迁移与存储测试；`AppStore` 已切换至 v2，并通过兼容投影维持既有页面。
 - [x] Phase 2：导航与 Hunt Home；一级导航改为选房 / 对比 / 待确认，补充 Readiness、Next Action 与待确认聚合页。
-- [x] Phase 3：Quick Capture 与 Progressive Detail；名称可单独保存，缺失月租保持未知，详情页展示事实来源与确认状态。
+- [x] Phase 3：Quick Capture 与 Progressive Detail；名称可单独保存，缺失月租保持未知，截图与照片以不同 Evidence 类型保存，详情页展示事实来源与确认状态。
 - [x] Phase 4：Unknown Engine；高影响费用、月租、硬性条件和计划看房的夜间噪音未知项已显式建模并可自动关闭，用户可手动添加待确认事项。
 - [x] Phase 5：VerificationTask 与 Viewing Mode；Unknown 自动生成询问、检查或现场观察任务；任务结果可保存文字/照片 Evidence、回写观察 Fact、关闭 Unknown 并记录事件。
 - [x] Phase 6：Difference-first Compare；先展示硬冲突、关键差异、阻塞项和已知取舍，完整矩阵按需展开。
 - [x] Phase 7：Decision Readiness Gate 与最终决策；最终确认呈现月租/通勤取舍、风险备注、阻塞和逐条事实证据，且不再通过兼容层丢失 v2 状态。
 - [x] Phase 8：地区模板与货币边界；中国大陆默认值仅由模板提供，兼容编辑页的面积单位从模板读取，金额使用系统 Locale 且调用方须传入货币代码，跨币种比较明确提示。
-- [x] Phase 9：完整 XCTest / XCUITest 验证；iPhone 16e Simulator 共 34 项通过，含按候选进入现场验证并一键记录结果的 UI 路径。
+- [x] Phase 9：完整 XCTest / XCUITest 验证；iPhone 16e Simulator 共 35 项通过，含按候选进入现场验证并一键记录结果的 UI 路径。
 - [~] Phase 10：真机产品验收；iPhone 17 已构建、安装和启动，尚缺少人工完成核心交互的验收记录。
 - [ ] 完成最终复盘。
 
@@ -80,7 +80,7 @@ v2 使用 Hunt、Option、Fact、Evidence、Unknown、VerificationTask、Criteri
 - 真机前不将 Simulator 验证表述为真机证据。
 - 真机基础证据：2026-08-19，iPhone 17（iOS 26.6.1）使用临时 `DEVELOPMENT_TEAM` 构建、安装、前台启动并保持运行成功；未修改项目签名配置。手工交互尚未验证。
 - 真机自动化限制：执行 XCTest / XCUITest 需要 `com.geekest.RentalComparisonUITests.xctrunner` 的开发描述文件；当前未配置。`-allowProvisioningUpdates` 会创建 Apple 开发者账号资源，因未获授权而未执行。
-- 2026-08-19 回归：Unknown / Viewing 闭环、v2 合并保护和地区模板边界加入后，iPhone 16e Simulator 完整测试共 34 项通过；iPhone 17 重新构建、安装并启动当前 Debug 包成功。
+- 2026-08-19 回归：Unknown / Viewing 闭环、v2 合并保护、地区模板边界和截图来源区分加入后，iPhone 16e Simulator 完整测试共 35 项通过；iPhone 17 重新构建、安装并启动当前 Debug 包成功。
 
 ## 11. 风险与回滚
 
