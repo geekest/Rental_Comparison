@@ -72,9 +72,9 @@
 - 已完成：Quick Capture 可明确将素材保存为截图或照片 Evidence；完整 XCTest / XCUITest 在 iPhone 16e Simulator 通过，共 35 项。
 - 已完成：支持用户手动添加高影响 Unknown，并自动生成验证任务。
 - 已完成：真实 iPhone 17（iOS 26.6.1）使用临时 Team 签名构建、安装并成功前台启动；工程文件未写入签名配置。
-- 已确认限制：真机 XCTest / XCUITest 因缺少 `com.geekest.RentalComparisonUITests.xctrunner` 的开发描述文件无法启动；自动创建描述文件会改动 Apple 开发者账号资源，未执行。
+- 已确认限制：真机 XCTest 已通过 31 项；XCUITest Runner 已完成签名但无法安装，因为免费开发者账号在该 iPhone 上的 3 个可安装 App 名额已用尽。未删除设备上的其他 App，也未改写工程签名配置。
 - 下一步：在真实 iPhone 手工完成“快速捕获 → 验证 → 对比 → 最终选择”交互验收；当前仅证明真机可安装、启动并保持运行。
-- 验证证据：iPhone 16e Simulator 完整 `xcodebuild test` 通过，共 35 项；iPhone 17 已重新构建、安装、启动并保持运行。覆盖范围与限制已分别记录。
+- 验证证据：iPhone 16e Simulator 完整 `xcodebuild test` 通过，共 35 项；iPhone 17 已重新构建、安装、启动并保持运行，真机 XCTest 通过 31 项。覆盖范围与限制已分别记录。
 
 ## 待办
 

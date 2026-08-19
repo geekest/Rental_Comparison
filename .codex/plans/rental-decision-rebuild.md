@@ -79,7 +79,7 @@ v2 使用 Hunt、Option、Fact、Evidence、Unknown、VerificationTask、Criteri
 - 完成 P0 后运行完整 `xcodebuild test`，并在 iPhone 16e Simulator 检查选房、对比、待确认和最终确认。
 - 真机前不将 Simulator 验证表述为真机证据。
 - 真机基础证据：2026-08-19，iPhone 17（iOS 26.6.1）使用临时 `DEVELOPMENT_TEAM` 构建、安装、前台启动并保持运行成功；未修改项目签名配置。手工交互尚未验证。
-- 真机自动化限制：执行 XCTest / XCUITest 需要 `com.geekest.RentalComparisonUITests.xctrunner` 的开发描述文件；当前未配置。`-allowProvisioningUpdates` 会创建 Apple 开发者账号资源，因未获授权而未执行。
+- 真机自动化限制：使用现有 Team 运行真机测试后，31 个 XCTest 已通过；XCUITest Runner 因免费开发者账号在 iPhone 上 3 个可安装 App 名额已满而无法安装。未删除设备上已有 App，工程签名配置未改写。
 - 2026-08-19 回归：Unknown / Viewing 闭环、v2 合并保护、地区模板边界和截图来源区分加入后，iPhone 16e Simulator 完整测试共 35 项通过；iPhone 17 重新构建、安装并启动当前 Debug 包成功。
 
 ## 11. 风险与回滚
