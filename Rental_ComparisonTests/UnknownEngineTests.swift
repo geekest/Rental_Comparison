@@ -45,4 +45,34 @@ final class UnknownEngineTests: XCTestCase {
         VerificationTaskEngine.sync(in: &state)
         XCTAssertEqual(state.verificationTasks.first { $0.unknownID == unknown?.id }?.type, .observe)
     }
+
+    func testManualUnknownIsScopedToItsOption() {
+        var state = DecisionModelMigration.migrate(Fixtures.initialState)
+        for optionID in [Fixtures.xuhuiID, Fixtures.jinganID] {
+            let index = try! XCTUnwrap(state.options.firstIndex { $0.id == optionID })
+            state.options[index].searchStage = .viewingPlanned
+        }
+        state.unknowns.append(.init(
+            id: UUID(), optionID: Fixtures.xuhuiID, factKey: "user.\(FactKey.noise)", impactLevel: .high,
+            reason: "确认夜间噪音", status: .open, createdAt: .now, resolvedAt: nil
+        ))
+
+        UnknownEngine.refresh(in: &state)
+
+        XCTAssertFalse(state.unknowns.contains { $0.optionID == Fixtures.xuhuiID && $0.factKey == "system.\(FactKey.noise)" })
+        XCTAssertTrue(state.unknowns.contains { $0.optionID == Fixtures.jinganID && $0.factKey == "system.\(FactKey.noise)" })
+    }
+
+    func testDuplicateUnknownRecordsAreReconciledWithoutCrashing() {
+        var state = DecisionModelMigration.migrate(Fixtures.initialState)
+        let duplicate = DecisionUnknown(
+            id: UUID(), optionID: Fixtures.xuhuiID, factKey: "system.\(FactKey.monthlyRent)", impactLevel: .high,
+            reason: "月租仍待确认", status: .open, createdAt: .now, resolvedAt: nil
+        )
+        state.unknowns = [duplicate, duplicate]
+
+        UnknownEngine.refresh(in: &state)
+
+        XCTAssertEqual(state.unknowns.filter { $0.optionID == Fixtures.xuhuiID && $0.factKey == "system.\(FactKey.monthlyRent)" }.count, 1)
+    }
 }

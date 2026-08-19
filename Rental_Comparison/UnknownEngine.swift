@@ -2,9 +2,11 @@ import Foundation
 
 enum UnknownEngine {
     static func refresh(in state: inout DecisionAppState, now: Date = .now) {
-        let existing = Dictionary(uniqueKeysWithValues: state.unknowns.map { (unknownKey(for: $0), $0) })
+        var existing: [String: DecisionUnknown] = [:]
+        for unknown in state.unknowns {
+            existing[unknownKey(for: unknown)] = unknown
+        }
         let desired = desiredUnknowns(in: state)
-        let desiredKeys = Set(desired.map(unknownKey(for:)))
 
         var reconciled = desired.map { candidate -> DecisionUnknown in
             let key = unknownKey(for: candidate)
@@ -20,7 +22,9 @@ enum UnknownEngine {
             return current
         }
 
-        for unknown in state.unknowns where !desiredKeys.contains(unknownKey(for: unknown)) {
+        var reconciledKeys = Set(reconciled.map(unknownKey(for:)))
+        for unknown in state.unknowns where !reconciledKeys.contains(unknownKey(for: unknown)) {
+            reconciledKeys.insert(unknownKey(for: unknown))
             if unknown.factKey.hasPrefix("system.") {
                 var resolved = unknown
                 resolved.status = .resolved
@@ -39,7 +43,7 @@ enum UnknownEngine {
         let userDeclaredKeys = Set(
             state.unknowns
                 .filter { !$0.factKey.hasPrefix("system.") }
-                .map { semanticKey(for: $0.factKey) }
+                .map { "\($0.optionID.uuidString):\(semanticKey(for: $0.factKey))" }
         )
         return state.options
             .filter { $0.decisionState != .eliminated }
@@ -65,7 +69,7 @@ enum UnknownEngine {
                 }
                 return unknowns
             }
-            .filter { !userDeclaredKeys.contains(semanticKey(for: $0.factKey)) }
+            .filter { !userDeclaredKeys.contains("\($0.optionID.uuidString):\(semanticKey(for: $0.factKey))") }
     }
 
     private static func make(optionID: UUID, key: String, reason: String, impact: UnknownImpactLevel) -> DecisionUnknown {

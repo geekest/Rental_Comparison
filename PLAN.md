@@ -69,12 +69,12 @@
 - 已完成：新增 China Mainland Regional Template 与 Manual Provider Adapter 接口；金额格式跟随系统 Locale；跨币种候选明确提示而不静默换算。
 - 已完成：兼容编辑页的面积单位从当前地区模板读取；金额格式要求调用方显式提供 ISO 货币代码，避免核心层隐式使用 CNY。
 - 已完成：最终确认页逐条展示已确认/现场观察事实的来源和状态，并同时呈现与参考候选的月租、通勤取舍及风险备注。
-- 已完成：Quick Capture 可明确将素材保存为截图或照片 Evidence；A/B/C 最终验收场景已覆盖 Unknown、现场噪音、费用确认、硬性冲突、最终选择与撤回；完整 XCTest / XCUITest 在 iPhone 16e Simulator 通过，共 36 项。
+- 已完成：Quick Capture 可明确将素材保存为截图或照片 Evidence；A/B/C 最终验收场景已覆盖 Unknown、现场噪音、费用确认、硬性冲突、最终选择与撤回；Unknown Engine 也能按候选隔离并安全去重；完整 XCTest / XCUITest 在 iPhone 16e Simulator 通过，共 38 项。
 - 已完成：支持用户手动添加高影响 Unknown，并自动生成验证任务。
 - 已完成：真实 iPhone 17（iOS 26.6.1）使用临时 Team 签名构建、安装并成功前台启动；工程文件未写入签名配置。
 - 已确认限制：真机 XCTest 已通过 31 项；XCUITest Runner 已完成签名但无法安装，因为免费开发者账号在该 iPhone 上的 3 个可安装 App 名额已用尽。未删除设备上的其他 App，也未改写工程签名配置。
 - 下一步：在真实 iPhone 手工完成“快速捕获 → 验证 → 对比 → 最终选择”交互验收；当前仅证明真机可安装、启动并保持运行。
-- 验证证据：iPhone 16e Simulator 完整 `xcodebuild test` 通过，共 36 项，含计划指定 A/B/C 决策场景；iPhone 17 已重新构建并成功安装最新包，真机 XCTest 通过 31 项。本次启动因设备锁屏被系统拒绝；此前包已启动并保持运行。覆盖范围与限制已分别记录。
+- 验证证据：iPhone 16e Simulator 完整 `xcodebuild test` 通过，共 38 项，含计划指定 A/B/C 决策场景与重复 Unknown 兼容回归；iPhone 17 已重新构建并成功安装最新包，真机 XCTest 通过 31 项。本次启动因设备锁屏被系统拒绝；此前包已启动并保持运行。覆盖范围与限制已分别记录。
 
 ## 待办
 
