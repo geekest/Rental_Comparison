@@ -78,7 +78,8 @@ v2 使用 Hunt、Option、Fact、Evidence、Unknown、VerificationTask、Criteri
 - 已完成 Phase 1 验证：iPhone 16e Simulator 单元测试 13 项、UI 测试 3 项全部通过。
 - 完成 P0 后运行完整 `xcodebuild test`，并在 iPhone 16e Simulator 检查选房、对比、待确认和最终确认。
 - 真机前不将 Simulator 验证表述为真机证据。
-- 真机基础证据：2026-08-19，iPhone 17（iOS 26.6.1）使用临时 `DEVELOPMENT_TEAM` 构建、安装、前台启动成功；未修改项目签名配置。手工交互尚未验证。
+- 真机基础证据：2026-08-19，iPhone 17（iOS 26.6.1）使用临时 `DEVELOPMENT_TEAM` 构建、安装、前台启动并保持运行成功；未修改项目签名配置。手工交互尚未验证。
+- 真机自动化限制：执行 XCTest / XCUITest 需要 `com.geekest.RentalComparisonUITests.xctrunner` 的开发描述文件；当前未配置。`-allowProvisioningUpdates` 会创建 Apple 开发者账号资源，因未获授权而未执行。
 
 ## 11. 风险与回滚
 

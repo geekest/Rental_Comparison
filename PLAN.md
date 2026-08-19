@@ -68,8 +68,9 @@
 - 已完成：完整 XCTest / XCUITest 在 iPhone 16e Simulator 通过，共 28 项。
 - 已完成：支持用户手动添加高影响 Unknown，并自动生成验证任务。
 - 已完成：真实 iPhone 17（iOS 26.6.1）使用临时 Team 签名构建、安装并成功前台启动；工程文件未写入签名配置。
-- 下一步：在真实 iPhone 手工完成“快速捕获 → 验证 → 对比 → 最终选择”交互验收；当前仅证明真机可安装和启动。
-- 验证证据：iPhone 16e Simulator 完整 `xcodebuild test` 通过，共 28 项；iPhone 17 真机构建、安装与启动成功。覆盖范围与限制已分别记录。
+- 已确认限制：真机 XCTest / XCUITest 因缺少 `com.geekest.RentalComparisonUITests.xctrunner` 的开发描述文件无法启动；自动创建描述文件会改动 Apple 开发者账号资源，未执行。
+- 下一步：在真实 iPhone 手工完成“快速捕获 → 验证 → 对比 → 最终选择”交互验收；当前仅证明真机可安装、启动并保持运行。
+- 验证证据：iPhone 16e Simulator 完整 `xcodebuild test` 通过，共 28 项；iPhone 17 真机构建、安装、启动并保持运行成功。覆盖范围与限制已分别记录。
 
 ## 待办
 
