@@ -36,6 +36,11 @@ enum UnknownEngine {
     private static func desiredUnknowns(in state: DecisionAppState) -> [DecisionUnknown] {
         let factsByOption = Dictionary(grouping: state.facts, by: \.optionID)
         let criteria = state.criteria.filter { state.hunt.criterionIDs.contains($0.id) }
+        let userDeclaredKeys = Set(
+            state.unknowns
+                .filter { !$0.factKey.hasPrefix("system.") }
+                .map { semanticKey(for: $0.factKey) }
+        )
         return state.options
             .filter { $0.decisionState != .eliminated }
             .flatMap { option in
@@ -54,8 +59,13 @@ enum UnknownEngine {
                     }
                     unknowns.append(make(optionID: option.id, key: "system.criterion.\(criterion.key)", reason: "硬性条件“\(criterion.title)”仍待确认", impact: .high))
                 }
+                if option.searchStage == .viewingPlanned,
+                   !hasObservedFact(for: FactKey.noise, in: facts) {
+                    unknowns.append(make(optionID: option.id, key: "system.\(FactKey.noise)", reason: "夜间噪音仍待现场确认", impact: .high))
+                }
                 return unknowns
             }
+            .filter { !userDeclaredKeys.contains(semanticKey(for: $0.factKey)) }
     }
 
     private static func make(optionID: UUID, key: String, reason: String, impact: UnknownImpactLevel) -> DecisionUnknown {
@@ -64,6 +74,12 @@ enum UnknownEngine {
 
     private static func fact(for key: String, in facts: [Fact]) -> Fact? {
         facts.first { $0.key == key }
+    }
+
+    private static func hasObservedFact(for key: String, in facts: [Fact]) -> Bool {
+        facts.contains { fact in
+            fact.key == key && (fact.verificationState == .userConfirmed || fact.verificationState == .observed)
+        }
     }
 
     private static func isUnknownCost(_ fact: Fact) -> Bool {
@@ -78,6 +94,12 @@ enum UnknownEngine {
 
     private static func unknownKey(for unknown: DecisionUnknown) -> String {
         "\(unknown.optionID.uuidString):\(unknown.factKey)"
+    }
+
+    private static func semanticKey(for factKey: String) -> String {
+        factKey
+            .replacingOccurrences(of: "system.", with: "")
+            .replacingOccurrences(of: "user.", with: "")
     }
 }
 

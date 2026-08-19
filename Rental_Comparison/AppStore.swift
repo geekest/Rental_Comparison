@@ -45,7 +45,8 @@ final class AppStore {
         var legacyTask = task
         change(&legacyTask)
         DecisionEngine.normalize(&legacyTask)
-        state = DecisionModelMigration.migrate(.init(privacyAcknowledged: state.privacyAcknowledged, task: legacyTask))
+        let migrated = DecisionModelMigration.migrate(.init(privacyAcknowledged: state.privacyAcknowledged, task: legacyTask))
+        state = DecisionModelMigration.mergeLegacyUpdate(migrated, preserving: state)
         refreshDecisionSupport()
         persist()
     }
@@ -182,18 +183,24 @@ final class AppStore {
         let now = Date.now
         let normalizedResult = result?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfBlank
         let optionID = state.verificationTasks[index].optionID
-        let evidence = photoIDs.map {
+        let photoEvidence = photoIDs.map {
             Evidence(id: UUID(), optionID: optionID, type: .photo, mediaID: $0, bundledAssetName: nil, text: nil, sourceURL: nil, capturedAt: now)
         }
+        let noteEvidence: [Evidence] = normalizedResult.map {
+            [Evidence(id: UUID(), optionID: optionID, type: .userObservation, mediaID: nil, bundledAssetName: nil, text: $0, sourceURL: nil, capturedAt: now)]
+        } ?? []
+        let evidence: [Evidence] = photoEvidence + noteEvidence
         state.evidence.append(contentsOf: evidence)
         state.verificationTasks[index].state = taskState
         state.verificationTasks[index].result = normalizedResult
         state.verificationTasks[index].evidenceIDs.append(contentsOf: evidence.map(\.id))
+        let completedTask = state.verificationTasks[index]
         if let unknownID = state.verificationTasks[index].unknownID,
            taskState == .verified || taskState == .issue,
            let unknownIndex = state.unknowns.firstIndex(where: { $0.id == unknownID }) {
             state.unknowns[unknownIndex].status = .resolved
             state.unknowns[unknownIndex].resolvedAt = now
+            recordObservation(for: completedTask, state: taskState, result: normalizedResult, evidenceIDs: evidence.map(\.id), at: now)
         }
         state.events.append(.init(id: UUID(), type: .verificationCompleted, optionID: optionID, at: now, reason: normalizedResult))
         refreshDecisionSupport(now: now)
@@ -203,11 +210,23 @@ final class AppStore {
     func createUnknown(optionID: UUID, reason: String, impactLevel: UnknownImpactLevel = .high) {
         let normalizedReason = reason.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalizedReason.isEmpty else { return }
+        let factKey = userUnknownFactKey(for: normalizedReason)
+        let semanticKey = factKey
+            .replacingOccurrences(of: "system.", with: "")
+            .replacingOccurrences(of: "user.", with: "")
+        guard !state.unknowns.contains(where: {
+            $0.optionID == optionID && $0.status == .open && $0.factKey
+                .replacingOccurrences(of: "system.", with: "")
+                .replacingOccurrences(of: "user.", with: "") == semanticKey
+        }), !state.facts.contains(where: {
+            $0.optionID == optionID && $0.key == semanticKey &&
+                ($0.verificationState == .userConfirmed || $0.verificationState == .observed)
+        }) else { return }
         let now = Date.now
         state.unknowns.append(.init(
             id: UUID(),
             optionID: optionID,
-            factKey: "user.\(UUID().uuidString)",
+            factKey: factKey,
             impactLevel: impactLevel,
             reason: normalizedReason,
             status: .open,
@@ -224,12 +243,54 @@ final class AppStore {
         VerificationTaskEngine.sync(in: &state)
     }
 
+    func setSearchStage(_ stage: SearchStage, for optionID: UUID) {
+        guard let index = state.options.firstIndex(where: { $0.id == optionID }) else { return }
+        state.options[index].searchStage = stage
+        state.options[index].updatedAt = .now
+        refreshDecisionSupport()
+        persist()
+    }
+
+    private func userUnknownFactKey(for reason: String) -> String {
+        if reason.contains("噪音") { return "user.\(FactKey.noise)" }
+        return "user.\(reason)"
+    }
+
     private func persist() {
         do {
             try persistence.saveV2(state)
             saveError = nil
         } catch {
             saveError = "保存失败：\(error.localizedDescription)"
+        }
+    }
+
+    private func recordObservation(for task: VerificationTask, state taskState: VerificationTaskState, result: String?, evidenceIDs: [UUID], at now: Date) {
+        guard task.type == .observe || task.unknownID.flatMap({ id in
+            state.unknowns.first(where: { $0.id == id })?.factKey.hasPrefix("user.")
+        }) == true else { return }
+        let key = task.unknownID
+            .flatMap { id in state.unknowns.first(where: { $0.id == id })?.factKey }
+            .map { $0.replacingOccurrences(of: "system.", with: "").replacingOccurrences(of: "user.", with: "") }
+            ?? "observation.\(task.id.uuidString)"
+        let value = result?.nilIfBlank ?? (taskState == .issue ? "发现风险" : "已现场确认")
+        if let factIndex = state.facts.firstIndex(where: { $0.optionID == task.optionID && $0.key == key }) {
+            state.facts[factIndex].value = .text(value)
+            state.facts[factIndex].sourceType = .userObservation
+            state.facts[factIndex].verificationState = .observed
+            state.facts[factIndex].evidenceIDs.append(contentsOf: evidenceIDs)
+            state.facts[factIndex].updatedAt = now
+        } else {
+            let fact = Fact(
+                id: UUID(), optionID: task.optionID, key: key, value: .text(value),
+                sourceType: .userObservation, sourceRef: nil, verificationState: .observed,
+                evidenceIDs: evidenceIDs, capturedAt: now, updatedAt: now
+            )
+            state.facts.append(fact)
+            if let optionIndex = state.options.firstIndex(where: { $0.id == task.optionID }) {
+                state.options[optionIndex].factIDs.append(fact.id)
+                state.options[optionIndex].updatedAt = now
+            }
         }
     }
 }

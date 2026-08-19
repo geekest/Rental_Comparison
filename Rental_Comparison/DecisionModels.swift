@@ -261,6 +261,7 @@ enum FactKey {
     static let commuteMinutes = "commute_minutes"
     static let commuteCost = "commute_cost"
     static let commuteMode = "commute_mode"
+    static let noise = "noise"
     static let costPrefix = "cost."
     static let criterionResultPrefix = "criterion_result."
 }

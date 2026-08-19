@@ -350,10 +350,11 @@ private struct FinalDecisionView: View {
                 if selected != nil {
                     Section("Decision Readiness") {
                         LabeledContent("当前状态", value: readinessTitle)
-                        LabeledContent("证据覆盖", value: "\(evidenceCount) 条记录")
                     }
                     Section("已知取舍") {
-                        Text(tradeOffText)
+                        ForEach(tradeOffLines, id: \.self) { line in
+                            Text(line)
+                        }
                     }
                     if !blockers.isEmpty {
                         Section("未解决阻塞项") {
@@ -366,8 +367,28 @@ private struct FinalDecisionView: View {
                     if !knownRisks.isEmpty {
                         Section("已知风险") {
                             ForEach(knownRisks) { task in
-                                Label(task.title, systemImage: "exclamationmark.triangle.fill")
-                                    .foregroundStyle(.orange)
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Label(task.title, systemImage: "exclamationmark.triangle.fill")
+                                        .foregroundStyle(.orange)
+                                    if let result = task.result, !result.isEmpty {
+                                        Text(result).font(.caption).foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Section("证据覆盖") {
+                        if evidenceFacts.isEmpty {
+                            Text("尚无已确认事实；请先补充决定性信息。")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            ForEach(evidenceFacts) { fact in
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(factTitle(for: fact)).font(.subheadline.weight(.semibold))
+                                    Text("\(factSourceTitle(fact.sourceType)) · \(verificationTitle(fact.verificationState))")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
                     }
@@ -403,9 +424,11 @@ private struct FinalDecisionView: View {
         return store.state.verificationTasks.filter { $0.optionID == selectedID && $0.state == .issue }
     }
 
-    private var evidenceCount: Int {
-        guard let selectedID else { return 0 }
-        return store.state.evidence.filter { $0.optionID == selectedID }.count
+    private var evidenceFacts: [Fact] {
+        guard let selectedID else { return [] }
+        return store.state.facts.filter {
+            $0.optionID == selectedID && ($0.verificationState == .userConfirmed || $0.verificationState == .observed)
+        }
     }
 
     private var readinessTitle: String {
@@ -418,15 +441,63 @@ private struct FinalDecisionView: View {
         }
     }
 
-    private var tradeOffText: String {
-        guard let selected else { return "选择候选后展示取舍。" }
+    private var tradeOffLines: [String] {
+        guard let selected else { return ["选择候选后展示取舍。"] }
         let alternatives = store.candidateListings.filter { $0.id != selected.id }
-        guard let cheapest = alternatives.filter({ $0.rent > 0 }).min(by: { $0.rent < $1.rent }) else {
-            return "补充其他候选的月租后，会在这里展示取舍。"
+        guard let reference = alternatives.compactMap({ listing in
+            listing.commuteMinutes.map { (listing, $0) }
+        }).min(by: { $0.1 < $1.1 })?.0 ?? alternatives.filter({ $0.rent > 0 }).min(by: { $0.rent < $1.rent }) else {
+            return ["补充其他候选的月租或通勤后，会在这里展示取舍。"]
         }
-        let difference = selected.rent - cheapest.rent
-        if difference == 0 { return "与 \(cheapest.name) 的月租相同。" }
-        let direction = difference > 0 ? "高" : "低"
-        return "相较 \(cheapest.name)，月租\(direction) \(abs(difference).formattedMoney(currency: selected.currency))。"
+
+        var lines: [String] = []
+        if selected.rent > 0, reference.rent > 0, selected.currency.uppercased() == reference.currency.uppercased() {
+            let difference = selected.rent - reference.rent
+            if difference == 0 {
+                lines.append("与 \(reference.name) 的月租相同。")
+            } else {
+                lines.append("相较 \(reference.name)，月租\(difference > 0 ? "高" : "低") \(abs(difference).formattedMoney(currency: selected.currency))。")
+            }
+        }
+        if let selectedCommute = selected.commuteMinutes, let referenceCommute = reference.commuteMinutes {
+            let difference = selectedCommute - referenceCommute
+            if difference == 0 {
+                lines.append("与 \(reference.name) 的单程通勤相同。")
+            } else {
+                lines.append("相较 \(reference.name)，单程通勤\(difference > 0 ? "多" : "少") \(abs(difference)) 分钟。")
+            }
+        }
+        return lines.isEmpty ? ["补充其他候选的月租或通勤后，会在这里展示取舍。"] : lines
+    }
+
+    private func factTitle(for fact: Fact) -> String {
+        switch fact.key {
+        case FactKey.monthlyRent: "月租"
+        case FactKey.commuteMinutes: "通勤时间"
+        case FactKey.noise: "噪音"
+        default: fact.key.replacingOccurrences(of: "user.", with: "")
+        }
+    }
+
+    private func factSourceTitle(_ source: FactSourceType) -> String {
+        switch source {
+        case .screenshot: "截图"
+        case .photo: "照片"
+        case .userObservation: "现场观察"
+        case .manual: "手动记录"
+        case .listing: "房源信息"
+        case .agentMessage: "中介消息"
+        case .agentVerbal: "口头承诺"
+        case .contract: "合同"
+        }
+    }
+
+    private func verificationTitle(_ state: FactVerificationState) -> String {
+        switch state {
+        case .unknown: "待确认"
+        case .extracted: "待核验"
+        case .userConfirmed: "已确认"
+        case .observed: "已现场观察"
+        }
     }
 }

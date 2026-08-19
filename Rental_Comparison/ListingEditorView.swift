@@ -28,6 +28,10 @@ struct ListingEditorView: View {
         !draft.city.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    private var areaUnit: String {
+        RegionalTemplateCatalog.template(id: store.state.hunt.regionTemplateID).areaUnit
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -74,7 +78,7 @@ struct ListingEditorView: View {
 
                 Section("位置与空间") {
                     TextField("地址", text: optionalStringBinding(\Listing.address))
-                    TextField("面积（㎡）", value: $draft.area, format: .number)
+                    TextField("面积（\(areaUnit)）", value: $draft.area, format: .number)
                         .keyboardType(.decimalPad)
                     Picker("面积范围", selection: optionalStringBinding(\Listing.areaScope, fallback: "整套")) {
                         Text("整套").tag("整套")

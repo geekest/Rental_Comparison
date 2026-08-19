@@ -213,6 +213,7 @@ private struct ListingCard: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("listingDetailButton_\(listing.id.uuidString)")
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -289,74 +290,13 @@ struct ListingDetailView: View {
                     ListingImageView(listing: listing)
                         .frame(height: 240)
                         .listRowInsets(EdgeInsets())
-                    if !openUnknowns.isEmpty {
-                        Section("决策阻塞项") {
-                            ForEach(openUnknowns) { unknown in
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Label(unknown.reason, systemImage: "exclamationmark.circle.fill")
-                                        .foregroundStyle(.orange)
-                                    Text(unknown.impactLevel == .high ? "高影响：解决前可能改变选择" : "待确认")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-                    }
-                    Section("决策事实") {
-                        DecisionFactRow(
-                            title: "月租",
-                            value: listing.rent > 0 ? listing.rent.formattedMoney(currency: listing.currency) : "待补充",
-                            fact: fact(for: FactKey.monthlyRent)
-                        )
-                        DecisionFactRow(
-                            title: "通勤",
-                            value: listing.commuteMinutes.map { "\($0) 分钟" } ?? "待补充",
-                            fact: fact(for: FactKey.commuteMinutes)
-                        )
-                        DecisionFactRow(
-                            title: "租期",
-                            value: listing.leaseMonths.map { "\($0) 个月" } ?? "待补充",
-                            fact: fact(for: FactKey.leaseMonths)
-                        )
-                    }
-                    if !missingDecisionFacts.isEmpty {
-                        Section {
-                            ForEach(missingDecisionFacts, id: \.self) { item in
-                                Label(item, systemImage: "plus.circle")
-                            }
-                        } header: {
-                            Text("建议下一步补充")
-                        } footer: {
-                            Text("只补充会帮助你做出选择的信息，不需要一次填完整张表。")
-                        }
-                    }
-                    Section("概览") {
-                        LabeledContent("月租", value: listing.rent.formattedMoney(currency: listing.currency))
-                        LabeledContent("租赁方式", value: listing.roomDescription)
-                        LabeledContent("面积", value: listing.area.map { "\($0.formatted()) ㎡ · \(listing.areaScope ?? "范围待补充")" } ?? "待补充")
-                        LabeledContent("楼层", value: listing.floor ?? "待补充")
-                        LabeledContent("地址", value: listing.address ?? "待补充")
-                    }
-                    Section("决策") {
-                        Toggle("重点考虑", isOn: Binding(
-                            get: { listing.focused },
-                            set: { _ in store.toggleFocus(listing.id) }
-                        ))
-                        Toggle("加入本次对比", isOn: Binding(
-                            get: { store.task.comparisonIDs.contains(listing.id) },
-                            set: { _ in _ = store.toggleComparison(listing.id) }
-                        ))
-                        .disabled(listing.status == .eliminated)
-                        NavigationLink("看房检查") { InspectionView(listingID: listing.id) }
-                        Button("添加待确认事项", systemImage: "questionmark.circle") {
-                            showingAddUnknown = true
-                        }
-                    }
-                    Section {
-                        Button(listing.status == .candidate ? "淘汰这套房源" : "恢复到候选池", role: listing.status == .candidate ? .destructive : nil) {
-                            if listing.status == .candidate { showingEliminate = true } else { store.toggleEliminated(listing.id) }
-                        }
-                    }
+                    blockerSection
+                    decisionFactSection(for: listing)
+                    suggestedFactsSection
+                    overviewSection(for: listing)
+                    decisionSection(for: listing)
+                    viewingSection(for: listing)
+                    eliminationSection(for: listing)
                 }
                 .navigationTitle(listing.name)
                 .toolbar { Button("完整信息") { showingEdit = true } }
@@ -386,8 +326,102 @@ struct ListingDetailView: View {
         store.state.facts.first { $0.optionID == listingID && $0.key == key }
     }
 
+    @ViewBuilder private var blockerSection: some View {
+        if !openUnknowns.isEmpty {
+            Section("决策阻塞项") {
+                ForEach(openUnknowns) { unknown in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Label(unknown.reason, systemImage: "exclamationmark.circle.fill")
+                            .foregroundStyle(.orange)
+                        Text(unknown.impactLevel == .high ? "高影响：解决前可能改变选择" : "待确认")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+
+    private func decisionFactSection(for listing: Listing) -> some View {
+        Section("决策事实") {
+            DecisionFactRow(title: "月租", value: listing.rent > 0 ? listing.rent.formattedMoney(currency: listing.currency) : "待补充", fact: fact(for: FactKey.monthlyRent))
+            DecisionFactRow(title: "通勤", value: listing.commuteMinutes.map { "\($0) 分钟" } ?? "待补充", fact: fact(for: FactKey.commuteMinutes))
+            DecisionFactRow(title: "租期", value: listing.leaseMonths.map { "\($0) 个月" } ?? "待补充", fact: fact(for: FactKey.leaseMonths))
+        }
+    }
+
+    @ViewBuilder private var suggestedFactsSection: some View {
+        if !missingDecisionFacts.isEmpty {
+            Section {
+                ForEach(missingDecisionFacts, id: \.self) { item in
+                    Label(item, systemImage: "plus.circle")
+                }
+            } header: {
+                Text("建议下一步补充")
+            } footer: {
+                Text("只补充会帮助你做出选择的信息，不需要一次填完整张表。")
+            }
+        }
+    }
+
+    private func overviewSection(for listing: Listing) -> some View {
+        Section("概览") {
+            LabeledContent("月租", value: listing.rent.formattedMoney(currency: listing.currency))
+            LabeledContent("租赁方式", value: listing.roomDescription)
+            LabeledContent("面积", value: listing.area.map { "\($0.formatted()) \(areaUnit) · \(listing.areaScope ?? "范围待补充")" } ?? "待补充")
+            LabeledContent("楼层", value: listing.floor ?? "待补充")
+            LabeledContent("地址", value: listing.address ?? "待补充")
+        }
+    }
+
+    private func decisionSection(for listing: Listing) -> some View {
+        Section("决策") {
+            Toggle("重点考虑", isOn: Binding(get: { listing.focused }, set: { _ in store.toggleFocus(listing.id) }))
+            Toggle("加入本次对比", isOn: Binding(get: { store.task.comparisonIDs.contains(listing.id) }, set: { _ in _ = store.toggleComparison(listing.id) }))
+                .disabled(listing.status == .eliminated)
+            Button("添加待确认事项", systemImage: "questionmark.circle") { showingAddUnknown = true }
+        }
+    }
+
+    private func viewingSection(for listing: Listing) -> some View {
+        Section {
+            if searchStage == .viewingPlanned {
+                NavigationLink { ViewingModeView(optionID: listing.id) } label: {
+                    Label("开始验证这套房", systemImage: "eye")
+                }
+                .accessibilityIdentifier("startViewingButton")
+            } else {
+                Button("计划看房", systemImage: "calendar.badge.plus") {
+                    store.setSearchStage(.viewingPlanned, for: listing.id)
+                }
+                .accessibilityIdentifier("scheduleViewingButton")
+            }
+            NavigationLink("完整检查（可选）") { InspectionView(listingID: listing.id) }
+        } header: {
+            Text("现场验证")
+        } footer: {
+            Text(searchStage == .viewingPlanned ? "优先确认本套房会影响选择的事项。" : "计划看房后，系统会把现场风险转为可执行验证。")
+        }
+    }
+
+    private func eliminationSection(for listing: Listing) -> some View {
+        Section {
+            Button(listing.status == .candidate ? "淘汰这套房源" : "恢复到候选池", role: listing.status == .candidate ? .destructive : nil) {
+                if listing.status == .candidate { showingEliminate = true } else { store.toggleEliminated(listing.id) }
+            }
+        }
+    }
+
     private var openUnknowns: [DecisionUnknown] {
         store.state.unknowns.filter { $0.optionID == listingID && $0.status == .open }
+    }
+
+    private var searchStage: SearchStage {
+        store.state.options.first { $0.id == listingID }?.searchStage ?? .saved
+    }
+
+    private var areaUnit: String {
+        RegionalTemplateCatalog.template(id: store.state.hunt.regionTemplateID).areaUnit
     }
 
     private var missingDecisionFacts: [String] {

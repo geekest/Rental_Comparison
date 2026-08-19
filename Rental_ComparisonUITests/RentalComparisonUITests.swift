@@ -50,4 +50,26 @@ final class RentalComparisonUITests: XCTestCase {
         card.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45)).tap()
         XCTAssertTrue(app.navigationBars["徐汇 · 一室一厅"].waitForExistence(timeout: 5))
     }
+
+    func testPlannedViewingOpensOptionSpecificVerificationMode() {
+        let listingID = "11111111-1111-1111-1111-111111111111"
+        let card = app.otherElements["listingCard_\(listingID)"]
+
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        app.buttons["listingDetailButton_\(listingID)"].tap()
+        XCTAssertTrue(app.navigationBars["徐汇 · 一室一厅"].waitForExistence(timeout: 5))
+        let scheduleButton = app.buttons["scheduleViewingButton"]
+        for _ in 0..<4 where !scheduleButton.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(scheduleButton.isHittable)
+
+        scheduleButton.tap()
+        let startButton = app.buttons["startViewingButton"]
+        XCTAssertTrue(startButton.waitForExistence(timeout: 5))
+        startButton.tap()
+
+        XCTAssertTrue(app.buttons["正常"].firstMatch.waitForExistence(timeout: 5))
+        app.buttons["正常"].firstMatch.tap()
+    }
 }

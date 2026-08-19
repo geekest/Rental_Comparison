@@ -133,6 +133,42 @@ enum DecisionModelMigration {
         )
     }
 
+    /// 旧版完整表单仍可编辑基础资料；合并时保留 v2 专属的未知项、验证任务和现场证据。
+    static func mergeLegacyUpdate(_ migrated: DecisionAppState, preserving current: DecisionAppState) -> DecisionAppState {
+        var merged = migrated
+        let migratedFactKeys = Set(migrated.facts.map { "\($0.optionID.uuidString):\($0.key)" })
+        merged.facts.append(contentsOf: current.facts.filter {
+            !migratedFactKeys.contains("\($0.optionID.uuidString):\($0.key)")
+        })
+
+        for item in current.evidence where !merged.evidence.contains(where: { existing in
+            existing.optionID == item.optionID &&
+                existing.type == item.type &&
+                existing.mediaID == item.mediaID &&
+                existing.bundledAssetName == item.bundledAssetName &&
+                existing.text == item.text &&
+                existing.sourceURL == item.sourceURL
+        }) {
+            merged.evidence.append(item)
+        }
+
+        merged.unknowns = current.unknowns
+        let currentV2Tasks = current.verificationTasks.filter { $0.unknownID != nil }
+        merged.verificationTasks.append(contentsOf: currentV2Tasks)
+        var eventIDs = Set(merged.events.map(\.id))
+        for event in current.events where eventIDs.insert(event.id).inserted {
+            merged.events.append(event)
+        }
+
+        for index in merged.options.indices {
+            let optionID = merged.options[index].id
+            merged.options[index].factIDs = merged.facts.filter { $0.optionID == optionID }.map(\.id)
+            merged.options[index].evidenceIDs = merged.evidence.filter { $0.optionID == optionID }.map(\.id)
+            merged.options[index].verificationTaskIDs = merged.verificationTasks.filter { $0.optionID == optionID }.map(\.id)
+        }
+        return merged
+    }
+
     private static func fact(
         optionID: UUID,
         key: String,

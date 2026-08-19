@@ -16,4 +16,11 @@ final class RegionalTemplateTests: XCTestCase {
         XCTAssertEqual(capture.sourceReferences, ["房东消息"])
         XCTAssertEqual(capture.evidenceMediaIDs, ["photo-a"])
     }
+
+    func testMoneyFormattingRequiresAndPreservesTheProvidedCurrency() {
+        let dollar = 1_200.0.formattedMoney(currency: "USD")
+        let euro = 1_200.0.formattedMoney(currency: "EUR")
+
+        XCTAssertNotEqual(dollar, euro)
+    }
 }

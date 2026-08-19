@@ -29,4 +29,20 @@ final class UnknownEngineTests: XCTestCase {
         XCTAssertEqual(matching.first?.id, original.id)
         XCTAssertEqual(matching.first?.status, .resolved)
     }
+
+    func testPlannedViewingCreatesObservableNoiseUnknown() {
+        var state = DecisionModelMigration.migrate(Fixtures.initialState)
+        let optionIndex = try! XCTUnwrap(state.options.firstIndex { $0.id == Fixtures.xuhuiID })
+        state.options[optionIndex].searchStage = .viewingPlanned
+
+        UnknownEngine.refresh(in: &state)
+
+        let unknown = state.unknowns.first {
+            $0.optionID == Fixtures.xuhuiID && $0.factKey == "system.\(FactKey.noise)"
+        }
+        XCTAssertEqual(unknown?.impactLevel, .high)
+
+        VerificationTaskEngine.sync(in: &state)
+        XCTAssertEqual(state.verificationTasks.first { $0.unknownID == unknown?.id }?.type, .observe)
+    }
 }

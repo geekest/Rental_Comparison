@@ -72,4 +72,35 @@ final class DecisionModelMigrationTests: XCTestCase {
         XCTAssertEqual(result.source, .v1Fallback(CocoaError(.fileWriteNoPermission).localizedDescription))
         XCTAssertEqual(result.state.version, 2)
     }
+
+    func testLegacyFormUpdateKeepsV2UnknownTasksAndObservationFacts() throws {
+        var current = DecisionModelMigration.migrate(Fixtures.initialState, now: migratedAt)
+        let unknown = DecisionUnknown(
+            id: UUID(), optionID: Fixtures.jinganID, factKey: "user.\(FactKey.noise)", impactLevel: .high,
+            reason: "确认夜间噪音", status: .open, createdAt: migratedAt, resolvedAt: nil
+        )
+        let observation = Fact(
+            id: UUID(), optionID: Fixtures.jinganID, key: FactKey.noise, value: .text("关窗后仍有车流声"),
+            sourceType: .userObservation, sourceRef: nil, verificationState: .observed,
+            evidenceIDs: [], capturedAt: migratedAt, updatedAt: migratedAt
+        )
+        let task = VerificationTask(
+            id: UUID(), optionID: Fixtures.jinganID, unknownID: unknown.id, type: .observe,
+            title: unknown.reason, instruction: "现场确认", state: .pending, result: nil, evidenceIDs: []
+        )
+        current.unknowns = [unknown]
+        current.facts.append(observation)
+        current.verificationTasks.append(task)
+
+        var legacy = Fixtures.initialState
+        legacy.task.listings[1].rent = 8_300
+        let merged = DecisionModelMigration.mergeLegacyUpdate(
+            DecisionModelMigration.migrate(legacy, now: migratedAt), preserving: current
+        )
+
+        XCTAssertEqual(merged.facts.first { $0.optionID == Fixtures.jinganID && $0.key == FactKey.monthlyRent }?.value, .decimal(8_300))
+        XCTAssertTrue(merged.unknowns.contains { $0.id == unknown.id })
+        XCTAssertTrue(merged.verificationTasks.contains { $0.id == task.id })
+        XCTAssertTrue(merged.facts.contains { $0.id == observation.id })
+    }
 }
