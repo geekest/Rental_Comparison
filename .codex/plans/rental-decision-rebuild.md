@@ -49,7 +49,7 @@ v2 使用 Hunt、Option、Fact、Evidence、Unknown、VerificationTask、Criteri
 - [x] Phase 6：Difference-first Compare；先展示硬冲突、关键差异、阻塞项和已知取舍，完整矩阵按需展开。
 - [x] Phase 7：Decision Readiness Gate 与最终决策；最终确认呈现风险、阻塞和证据，且不再通过兼容层丢失 v2 状态。
 - [x] Phase 8：地区模板与货币边界；中国大陆默认值仅由模板提供，金额使用系统 Locale，跨币种比较明确提示。
-- [ ] Phase 9：完整 XCTest / XCUITest 验证。
+- [x] Phase 9：完整 XCTest / XCUITest 验证；iPhone 16e Simulator 共 28 项通过。
 - [ ] Phase 10：真机产品验收。
 - [ ] 完成最终复盘。
 
