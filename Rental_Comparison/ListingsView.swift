@@ -277,6 +277,8 @@ struct ListingDetailView: View {
     @State private var showingEdit = false
     @State private var showingEliminate = false
     @State private var eliminationReason = ""
+    @State private var showingAddUnknown = false
+    @State private var unknownReason = ""
 
     private var listing: Listing? { store.task.listings.first { $0.id == listingID } }
 
@@ -346,6 +348,9 @@ struct ListingDetailView: View {
                         ))
                         .disabled(listing.status == .eliminated)
                         NavigationLink("看房检查") { InspectionView(listingID: listing.id) }
+                        Button("添加待确认事项", systemImage: "questionmark.circle") {
+                            showingAddUnknown = true
+                        }
                     }
                     Section {
                         Button(listing.status == .candidate ? "淘汰这套房源" : "恢复到候选池", role: listing.status == .candidate ? .destructive : nil) {
@@ -361,6 +366,16 @@ struct ListingDetailView: View {
                     Button("取消", role: .cancel) {}
                     Button("淘汰", role: .destructive) { store.toggleEliminated(listing.id, reason: eliminationReason) }
                 } message: { Text("房源会退出当前对比，但可以随时恢复。") }
+                .alert("添加待确认事项", isPresented: $showingAddUnknown) {
+                    TextField("例如：确认夜间噪音", text: $unknownReason)
+                    Button("取消", role: .cancel) { unknownReason = "" }
+                    Button("添加") {
+                        store.createUnknown(optionID: listing.id, reason: unknownReason)
+                        unknownReason = ""
+                    }
+                } message: {
+                    Text("系统会将其作为高影响事项，并生成可执行的验证任务。")
+                }
             } else {
                 ContentUnavailableView("房源不存在", systemImage: "house.slash")
             }

@@ -29,4 +29,14 @@ final class VerificationTaskCompletionTests: XCTestCase {
         XCTAssertTrue(store.state.evidence.contains { $0.mediaID == "noise-photo" })
         XCTAssertEqual(saved?.events.last?.type, .verificationCompleted)
     }
+
+    func testUserCreatedUnknownGeneratesVerificationTask() throws {
+        let store = AppStore(persistence: .init(loadV2: { nil }, loadV1: { nil }, saveV2: { _ in }), useFixtures: true)
+
+        store.createUnknown(optionID: Fixtures.jinganID, reason: "确认夜间噪音")
+
+        let unknown = try XCTUnwrap(store.state.unknowns.first { $0.optionID == Fixtures.jinganID && $0.reason == "确认夜间噪音" })
+        XCTAssertEqual(unknown.impactLevel, .high)
+        XCTAssertTrue(store.state.verificationTasks.contains { $0.unknownID == unknown.id && $0.state == .pending })
+    }
 }

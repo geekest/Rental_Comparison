@@ -200,6 +200,25 @@ final class AppStore {
         persist()
     }
 
+    func createUnknown(optionID: UUID, reason: String, impactLevel: UnknownImpactLevel = .high) {
+        let normalizedReason = reason.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedReason.isEmpty else { return }
+        let now = Date.now
+        state.unknowns.append(.init(
+            id: UUID(),
+            optionID: optionID,
+            factKey: "user.\(UUID().uuidString)",
+            impactLevel: impactLevel,
+            reason: normalizedReason,
+            status: .open,
+            createdAt: now,
+            resolvedAt: nil
+        ))
+        state.events.append(.init(id: UUID(), type: .unknownCreated, optionID: optionID, at: now, reason: normalizedReason))
+        refreshDecisionSupport(now: now)
+        persist()
+    }
+
     private func refreshDecisionSupport(now: Date = .now) {
         UnknownEngine.refresh(in: &state, now: now)
         VerificationTaskEngine.sync(in: &state)

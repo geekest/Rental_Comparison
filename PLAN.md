@@ -51,7 +51,7 @@
 
 ### Rental Decision System iOS 重构
 
-- 状态：Phase 9 已完成；等待 Phase 10 真机验收。
+- 状态：Phase 10 已完成基础真机安装与启动验证；仍缺少人工交互验收。
 - 目标：将原生 iOS 从房源字段整理流程迁移为围绕事实、证据、未知项、验证任务和 Decision Readiness 的决策系统。
 - 范围：P0 仅覆盖 v1 → v2 本地迁移、选房/对比/待确认导航、Quick Capture、差异优先比较、最终确认和 China Regional Template；不包含服务器、AI、地图、Share Extension 与云同步。
 - 权威文档：`docs/specs/spec_002_decision_readiness_rebuild.md`、`docs/adr/0003_decision_model_v2_migration.md`、`.codex/plans/rental-decision-rebuild.md`。
@@ -66,8 +66,10 @@
 - 已完成：最终选择使用 Decision Readiness Gate，展示证据覆盖、已知取舍、未解决 blocker 和风险；确认/撤回直接操作 v2 状态，避免丢失验证记录。
 - 已完成：新增 China Mainland Regional Template 与 Manual Provider Adapter 接口；金额格式跟随系统 Locale；跨币种候选明确提示而不静默换算。
 - 已完成：完整 XCTest / XCUITest 在 iPhone 16e Simulator 通过，共 28 项。
-- 下一步：在真实 iPhone 完成核心场景验收；当前未将 Simulator 结果表述为真机证据。
-- 验证证据：iPhone 16e Simulator 完整 `xcodebuild test` 通过，共 28 项；覆盖旧数据迁移、快速捕获、Unknown/Verification 闭环、差异优先对比、最终决策与地区模板。
+- 已完成：支持用户手动添加高影响 Unknown，并自动生成验证任务。
+- 已完成：真实 iPhone 17（iOS 26.6.1）使用临时 Team 签名构建、安装并成功前台启动；工程文件未写入签名配置。
+- 下一步：在真实 iPhone 手工完成“快速捕获 → 验证 → 对比 → 最终选择”交互验收；当前仅证明真机可安装和启动。
+- 验证证据：iPhone 16e Simulator 完整 `xcodebuild test` 通过，共 28 项；iPhone 17 真机构建、安装与启动成功。覆盖范围与限制已分别记录。
 
 ## 待办
 
