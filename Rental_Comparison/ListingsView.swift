@@ -112,7 +112,7 @@ struct ListingsView: View {
                     .accessibilityIdentifier("addListingButton")
             }
         }
-        .sheet(isPresented: $showingAdd) { ListingEditorView() }
+        .sheet(isPresented: $showingAdd) { QuickCaptureView() }
         .alert("暂时无法加入对比", isPresented: Binding(
             get: { limitMessage != nil },
             set: { if !$0 { limitMessage = nil } }
@@ -287,6 +287,34 @@ struct ListingDetailView: View {
                     ListingImageView(listing: listing)
                         .frame(height: 240)
                         .listRowInsets(EdgeInsets())
+                    Section("决策事实") {
+                        DecisionFactRow(
+                            title: "月租",
+                            value: listing.rent > 0 ? listing.rent.formattedMoney(currency: listing.currency) : "待补充",
+                            fact: fact(for: FactKey.monthlyRent)
+                        )
+                        DecisionFactRow(
+                            title: "通勤",
+                            value: listing.commuteMinutes.map { "\($0) 分钟" } ?? "待补充",
+                            fact: fact(for: FactKey.commuteMinutes)
+                        )
+                        DecisionFactRow(
+                            title: "租期",
+                            value: listing.leaseMonths.map { "\($0) 个月" } ?? "待补充",
+                            fact: fact(for: FactKey.leaseMonths)
+                        )
+                    }
+                    if !missingDecisionFacts.isEmpty {
+                        Section {
+                            ForEach(missingDecisionFacts, id: \.self) { item in
+                                Label(item, systemImage: "plus.circle")
+                            }
+                        } header: {
+                            Text("建议下一步补充")
+                        } footer: {
+                            Text("只补充会帮助你做出选择的信息，不需要一次填完整张表。")
+                        }
+                    }
                     Section("概览") {
                         LabeledContent("月租", value: listing.rent.formattedMoney(currency: listing.currency))
                         LabeledContent("租赁方式", value: listing.roomDescription)
@@ -313,7 +341,7 @@ struct ListingDetailView: View {
                     }
                 }
                 .navigationTitle(listing.name)
-                .toolbar { Button("编辑") { showingEdit = true } }
+                .toolbar { Button("完整信息") { showingEdit = true } }
                 .sheet(isPresented: $showingEdit) { ListingEditorView(existing: listing) }
                 .alert("淘汰这套房源？", isPresented: $showingEliminate) {
                     TextField("原因（可选）", text: $eliminationReason)
@@ -323,6 +351,65 @@ struct ListingDetailView: View {
             } else {
                 ContentUnavailableView("房源不存在", systemImage: "house.slash")
             }
+        }
+    }
+
+    private func fact(for key: String) -> Fact? {
+        store.state.facts.first { $0.optionID == listingID && $0.key == key }
+    }
+
+    private var missingDecisionFacts: [String] {
+        var values: [String] = []
+        if fact(for: FactKey.monthlyRent) == nil { values.append("月租") }
+        if fact(for: FactKey.commuteMinutes) == nil { values.append("通勤时间") }
+        if fact(for: FactKey.leaseMonths) == nil { values.append("租期") }
+        return values
+    }
+}
+
+private struct DecisionFactRow: View {
+    let title: String
+    let value: String
+    let fact: Fact?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            LabeledContent(title, value: value)
+            if let fact {
+                Text("来源：\(fact.sourceType.title) · \(fact.verificationState.title)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("尚未记录或确认")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+        }
+    }
+}
+
+private extension FactSourceType {
+    var title: String {
+        switch self {
+        case .screenshot: "截图"
+        case .photo: "照片"
+        case .userObservation: "现场观察"
+        case .manual: "手动记录"
+        case .listing: "房源信息"
+        case .agentMessage: "中介消息"
+        case .agentVerbal: "口头承诺"
+        case .contract: "合同"
+        }
+    }
+}
+
+private extension FactVerificationState {
+    var title: String {
+        switch self {
+        case .unknown: "待确认"
+        case .extracted: "待核验"
+        case .userConfirmed: "已确认"
+        case .observed: "已现场观察"
         }
     }
 }

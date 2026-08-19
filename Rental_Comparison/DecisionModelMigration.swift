@@ -19,7 +19,9 @@ enum DecisionModelMigration {
             var optionEvidence: [Evidence] = []
             var optionTasks: [VerificationTask] = []
 
-            optionFacts.append(fact(optionID: optionID, key: FactKey.monthlyRent, value: .decimal(listing.rent), now: now))
+            if listing.rent > 0 {
+                optionFacts.append(fact(optionID: optionID, key: FactKey.monthlyRent, value: .decimal(listing.rent), now: now))
+            }
             optionFacts.append(fact(optionID: optionID, key: FactKey.rentalType, value: .text(listing.rentalType.rawValue), now: now))
             appendOptionalText(listing.address, key: FactKey.address, optionID: optionID, into: &optionFacts, now: now)
             appendOptionalDecimal(listing.area, key: FactKey.area, optionID: optionID, into: &optionFacts, now: now)

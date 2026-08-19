@@ -25,8 +25,7 @@ struct ListingEditorView: View {
 
     private var canSave: Bool {
         !draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !draft.city.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        draft.rent > 0
+        !draft.city.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     var body: some View {
@@ -124,7 +123,7 @@ struct ListingEditorView: View {
                     }
                 }
             }
-            .navigationTitle(isNew ? "添加租赁方案" : "编辑房源")
+            .navigationTitle(isNew ? "添加租赁方案" : "完整信息")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }

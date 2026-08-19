@@ -20,11 +20,15 @@ final class RentalComparisonUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["下一次需要确认"].exists)
     }
 
-    func testAddListingSheetHasRequiredFields() {
+    func testQuickCaptureAllowsNameWithoutRent() {
         app.buttons["addListingButton"].tap()
         XCTAssertTrue(app.textFields["listingNameField"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.textFields["listingRentField"].exists)
         XCTAssertTrue(app.buttons["saveListingButton"].exists)
+        app.textFields["listingNameField"].tap()
+        app.textFields["listingNameField"].typeText("Quick candidate")
+        app.buttons["saveListingButton"].tap()
+        XCTAssertTrue(app.navigationBars["快速添加候选"].waitForNonExistence(timeout: 5))
     }
 
     func testListingCardCanRemoveFromComparisonAndOpenDetails() {

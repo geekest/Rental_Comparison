@@ -51,7 +51,7 @@
 
 ### Rental Decision System iOS 重构
 
-- 状态：Phase 2 已完成，正在进行 Phase 3。
+- 状态：Phase 3 已完成，准备进入 Phase 4。
 - 目标：将原生 iOS 从房源字段整理流程迁移为围绕事实、证据、未知项、验证任务和 Decision Readiness 的决策系统。
 - 范围：P0 仅覆盖 v1 → v2 本地迁移、选房/对比/待确认导航、Quick Capture、差异优先比较、最终确认和 China Regional Template；不包含服务器、AI、地图、Share Extension 与云同步。
 - 权威文档：`docs/specs/spec_002_decision_readiness_rebuild.md`、`docs/adr/0003_decision_model_v2_migration.md`、`.codex/plans/rental-decision-rebuild.md`。
@@ -59,8 +59,9 @@
 - 已完成：新增 Hunt / Option / Fact / Evidence / Unknown / VerificationTask / Criterion / DecisionEvent v2 领域模型，以及独立的 `state-v2.json` 迁移与回退读取层。
 - 已完成：`AppStore` 已改为读取、保存 v2 状态，并通过兼容投影维持旧页面可运行；旧版照片、看房证据、城市、成本与历史事件均保留。
 - 已完成：主导航已改为“选房 / 对比 / 待确认”；首页展示当前任务、候选数、阻塞数与规则驱动的下一步行动；选房重点已移至任务设置。
-- 下一步：实现名称与图片即可保存的 Quick Capture，并将完整编辑降级为详情内的渐进补充。
-- 验证证据：iPhone 16e Simulator 构建通过；单元测试 16 项、UI 测试 3 项通过。覆盖 v1 迁移、v2 读取幂等、写入失败回退、兼容投影、Readiness/Next Action 规则与既有核心交互。
+- 已完成：Quick Capture 支持仅凭名称或名称加图片保存候选；月租缺失保持未知；完整字段编辑已降级为详情页入口，关键事实展示来源和确认状态。
+- 下一步：实现高影响 Unknown 识别，并将 Unknown 转为可执行的验证任务。
+- 验证证据：iPhone 16e Simulator 构建通过；单元测试 18 项通过，Quick Capture UI 流程通过。覆盖 v1 迁移、v2 读取幂等、写入失败回退、兼容投影、Readiness/Next Action 与快速捕获。
 
 ## 待办
 

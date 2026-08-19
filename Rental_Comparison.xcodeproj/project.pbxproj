@@ -19,6 +19,7 @@
 		5D0F36AC72FA7DA76784A5C9 /* ListingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AE38A57F4BB849F42123451 /* ListingsView.swift */; };
 		644ACF2B02058C8EC9F299ED /* ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30F51AA364A7F1765BD0F332 /* ResultView.swift */; };
 		6CB55238845A8E91086C07BD /* listings in Resources */ = {isa = PBXBuildFile; fileRef = DD7CE0F753F35329F1E8AA54 /* listings */; };
+		890C485099D1D82E26FE6039 /* QuickCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D397D1F55CA75C7775A12D3F /* QuickCaptureTests.swift */; };
 		8A1E42B74429B861482C51A9 /* Fixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = E793CEC747168D939A44157D /* Fixtures.swift */; };
 		91D14A1C692B6E9E4B0C82B6 /* DecisionModelMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5F8287762F282425D41A8D9 /* DecisionModelMigrationTests.swift */; };
 		9401A08EF0815F3B978150EE /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80DFA460A95EBFEE8F10B95B /* AppStore.swift */; };
@@ -28,6 +29,7 @@
 		AE635B0A7B3D05487CA36C37 /* DecisionPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2847635CDE29FA162CB880A /* DecisionPersistence.swift */; };
 		B53CC155C954409108A8A41E /* DecisionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF30EFDD39D4C90A7B37618A /* DecisionEngine.swift */; };
 		B95111085629F410F286FF1C /* DecisionReadinessEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 250B2D604C8FF14D6E6445E5 /* DecisionReadinessEngineTests.swift */; };
+		BE8EEEE9B0BB7AD4734D99F3 /* QuickCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F443AE82A5CE9733C8E9BD6E /* QuickCaptureView.swift */; };
 		D175ED9EECBCC7580DC97AF6 /* DecisionLegacyProjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1C09C66DFEED2BAB1BDE6F /* DecisionLegacyProjectionTests.swift */; };
 		E5678A88D5A146DA6B9B4222 /* ListingImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616280B477221429245E9C4D /* ListingImageView.swift */; };
 		EF9891E9A6FB9EBA05B62A52 /* DecisionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F64629542B49FDC340DDC1 /* DecisionModels.swift */; };
@@ -77,10 +79,12 @@
 		B4614FEA9C37987DC185C329 /* DecisionLegacyProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionLegacyProjection.swift; sourceTree = "<group>"; };
 		C167F50290B75FC05E826D73 /* RentalComparisonUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RentalComparisonUITests.swift; sourceTree = "<group>"; };
 		C5F8287762F282425D41A8D9 /* DecisionModelMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionModelMigrationTests.swift; sourceTree = "<group>"; };
+		D397D1F55CA75C7775A12D3F /* QuickCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureTests.swift; sourceTree = "<group>"; };
 		DA1C09C66DFEED2BAB1BDE6F /* DecisionLegacyProjectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionLegacyProjectionTests.swift; sourceTree = "<group>"; };
 		DD7CE0F753F35329F1E8AA54 /* listings */ = {isa = PBXFileReference; lastKnownFileType = folder; name = listings; path = web_version/public/assets/listings; sourceTree = SOURCE_ROOT; };
 		E793CEC747168D939A44157D /* Fixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fixtures.swift; sourceTree = "<group>"; };
 		F2847635CDE29FA162CB880A /* DecisionPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionPersistence.swift; sourceTree = "<group>"; };
+		F443AE82A5CE9733C8E9BD6E /* QuickCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureView.swift; sourceTree = "<group>"; };
 		F86E02A1D310A22BD3FE6249 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		FA8D1416119ACEF8093016D5 /* ComparisonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComparisonView.swift; sourceTree = "<group>"; };
 		FF30EFDD39D4C90A7B37618A /* DecisionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionEngine.swift; sourceTree = "<group>"; };
@@ -114,6 +118,7 @@
 				616280B477221429245E9C4D /* ListingImageView.swift */,
 				4AE38A57F4BB849F42123451 /* ListingsView.swift */,
 				758395FDB7838D950701CAE9 /* Models.swift */,
+				F443AE82A5CE9733C8E9BD6E /* QuickCaptureView.swift */,
 				9A60F71C76654445BCD736A5 /* RentalComparisonApp.swift */,
 				01CB5A970DCA0EA5C07FD5D1 /* ReportBuilder.swift */,
 				30F51AA364A7F1765BD0F332 /* ResultView.swift */,
@@ -131,6 +136,7 @@
 				DA1C09C66DFEED2BAB1BDE6F /* DecisionLegacyProjectionTests.swift */,
 				C5F8287762F282425D41A8D9 /* DecisionModelMigrationTests.swift */,
 				250B2D604C8FF14D6E6445E5 /* DecisionReadinessEngineTests.swift */,
+				D397D1F55CA75C7775A12D3F /* QuickCaptureTests.swift */,
 			);
 			path = Rental_ComparisonTests;
 			sourceTree = "<group>";
@@ -268,6 +274,7 @@
 				D175ED9EECBCC7580DC97AF6 /* DecisionLegacyProjectionTests.swift in Sources */,
 				91D14A1C692B6E9E4B0C82B6 /* DecisionModelMigrationTests.swift in Sources */,
 				B95111085629F410F286FF1C /* DecisionReadinessEngineTests.swift in Sources */,
+				890C485099D1D82E26FE6039 /* QuickCaptureTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -290,6 +297,7 @@
 				E5678A88D5A146DA6B9B4222 /* ListingImageView.swift in Sources */,
 				5D0F36AC72FA7DA76784A5C9 /* ListingsView.swift in Sources */,
 				FEED2D82F3194A5607D40EA2 /* Models.swift in Sources */,
+				BE8EEEE9B0BB7AD4734D99F3 /* QuickCaptureView.swift in Sources */,
 				045968097BC606FA337466ED /* RentalComparisonApp.swift in Sources */,
 				25A2F25DC8B0B465709A5C13 /* ReportBuilder.swift in Sources */,
 				644ACF2B02058C8EC9F299ED /* ResultView.swift in Sources */,

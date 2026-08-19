@@ -58,6 +58,53 @@ final class AppStore {
         }
     }
 
+    @discardableResult
+    func captureOption(name: String, monthlyRent: Double?, photoIDs: [String]) -> UUID {
+        let now = Date.now
+        let optionID = UUID()
+        let normalizedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        var facts: [Fact] = []
+        if let monthlyRent, monthlyRent > 0 {
+            facts.append(.init(
+                id: UUID(),
+                optionID: optionID,
+                key: FactKey.monthlyRent,
+                value: .decimal(monthlyRent),
+                sourceType: .manual,
+                sourceRef: nil,
+                verificationState: .userConfirmed,
+                evidenceIDs: [],
+                capturedAt: now,
+                updatedAt: now
+            ))
+        }
+        let evidence = photoIDs.map {
+            Evidence(id: UUID(), optionID: optionID, type: .photo, mediaID: $0, bundledAssetName: nil, text: nil, sourceURL: nil, capturedAt: now)
+        }
+        state.options.append(.init(
+            id: optionID,
+            huntID: state.hunt.id,
+            displayName: normalizedName,
+            searchStage: .saved,
+            decisionState: .candidate,
+            isFocused: false,
+            eliminationReason: nil,
+            sourceRefs: [],
+            factIDs: facts.map(\.id),
+            evidenceIDs: evidence.map(\.id),
+            verificationTaskIDs: [],
+            createdAt: now,
+            updatedAt: now
+        ))
+        state.facts.append(contentsOf: facts)
+        state.evidence.append(contentsOf: evidence)
+        state.hunt.optionIDs.append(optionID)
+        state.hunt.updatedAt = now
+        state.events.append(.init(id: UUID(), type: .captured, optionID: optionID, at: now, reason: nil))
+        persist()
+        return optionID
+    }
+
     func toggleComparison(_ id: UUID) -> Bool {
         guard let listing = task.listings.first(where: { $0.id == id }), listing.status == .candidate else { return false }
         if task.comparisonIDs.contains(id) {
