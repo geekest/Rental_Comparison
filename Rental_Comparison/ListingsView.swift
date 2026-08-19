@@ -287,6 +287,19 @@ struct ListingDetailView: View {
                     ListingImageView(listing: listing)
                         .frame(height: 240)
                         .listRowInsets(EdgeInsets())
+                    if !openUnknowns.isEmpty {
+                        Section("决策阻塞项") {
+                            ForEach(openUnknowns) { unknown in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Label(unknown.reason, systemImage: "exclamationmark.circle.fill")
+                                        .foregroundStyle(.orange)
+                                    Text(unknown.impactLevel == .high ? "高影响：解决前可能改变选择" : "待确认")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
                     Section("决策事实") {
                         DecisionFactRow(
                             title: "月租",
@@ -356,6 +369,10 @@ struct ListingDetailView: View {
 
     private func fact(for key: String) -> Fact? {
         store.state.facts.first { $0.optionID == listingID && $0.key == key }
+    }
+
+    private var openUnknowns: [DecisionUnknown] {
+        store.state.unknowns.filter { $0.optionID == listingID && $0.status == .open }
     }
 
     private var missingDecisionFacts: [String] {

@@ -44,7 +44,10 @@ v2 使用 Hunt、Option、Fact、Evidence、Unknown、VerificationTask、Criteri
 - [x] Phase 1：v2 模型、迁移与存储测试；`AppStore` 已切换至 v2，并通过兼容投影维持既有页面。
 - [x] Phase 2：导航与 Hunt Home；一级导航改为选房 / 对比 / 待确认，补充 Readiness、Next Action 与待确认聚合页。
 - [x] Phase 3：Quick Capture 与 Progressive Detail；名称可单独保存，缺失月租保持未知，详情页展示事实来源与确认状态。
-- [ ] Phase 4-7：未知项、验证、差异比较与最终决策。
+- [x] Phase 4：Unknown Engine；高影响费用、月租和硬性条件未知项已显式建模并可自动关闭。
+- [ ] Phase 5：VerificationTask 与 Viewing Mode。
+- [ ] Phase 6：Difference-first Compare。
+- [ ] Phase 7：Decision Readiness Gate 与最终决策。
 - [ ] Phase 8-10：全球化、全量验证与真机验收。
 - [ ] 完成最终复盘。
 

@@ -29,6 +29,7 @@ final class AppStore {
                 saveError = "读取本地数据失败：\(error.localizedDescription)"
             }
         }
+        UnknownEngine.refresh(in: &state)
     }
 
     var task: RentalTask { DecisionLegacyProjection.task(from: state) }
@@ -45,6 +46,7 @@ final class AppStore {
         change(&legacyTask)
         DecisionEngine.normalize(&legacyTask)
         state = DecisionModelMigration.migrate(.init(privacyAcknowledged: state.privacyAcknowledged, task: legacyTask))
+        UnknownEngine.refresh(in: &state)
         persist()
     }
 
@@ -101,6 +103,7 @@ final class AppStore {
         state.hunt.optionIDs.append(optionID)
         state.hunt.updatedAt = now
         state.events.append(.init(id: UUID(), type: .captured, optionID: optionID, at: now, reason: nil))
+        UnknownEngine.refresh(in: &state, now: now)
         persist()
         return optionID
     }
@@ -156,6 +159,7 @@ final class AppStore {
 
     func resetToFixtures() {
         state = DecisionModelMigration.migrate(Fixtures.initialState)
+        UnknownEngine.refresh(in: &state)
         persist()
     }
 
