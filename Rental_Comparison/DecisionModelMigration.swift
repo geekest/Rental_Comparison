@@ -138,7 +138,8 @@ enum DecisionModelMigration {
         var merged = migrated
         let migratedFactKeys = Set(migrated.facts.map { "\($0.optionID.uuidString):\($0.key)" })
         merged.facts.append(contentsOf: current.facts.filter {
-            !migratedFactKeys.contains("\($0.optionID.uuidString):\($0.key)")
+            !migratedFactKeys.contains("\($0.optionID.uuidString):\($0.key)") &&
+                !hasEquivalentMigratedCost($0, in: migrated.facts)
         })
 
         for item in current.evidence where !merged.evidence.contains(where: { existing in
@@ -167,6 +168,17 @@ enum DecisionModelMigration {
             merged.options[index].verificationTaskIDs = merged.verificationTasks.filter { $0.optionID == optionID }.map(\.id)
         }
         return merged
+    }
+
+    private static func hasEquivalentMigratedCost(_ fact: Fact, in migratedFacts: [Fact]) -> Bool {
+        guard case let .cost(value) = fact.value else { return false }
+        return migratedFacts.contains { candidate in
+            guard candidate.optionID == fact.optionID,
+                  case let .cost(other) = candidate.value else { return false }
+            return other.name == value.name &&
+                other.cadence == value.cadence &&
+                other.refundable == value.refundable
+        }
     }
 
     private static func fact(
