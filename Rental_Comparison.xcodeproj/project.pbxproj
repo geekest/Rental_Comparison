@@ -12,6 +12,7 @@
 		045968097BC606FA337466ED /* RentalComparisonApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A60F71C76654445BCD736A5 /* RentalComparisonApp.swift */; };
 		0585A7730A31129965AFAD01 /* ListingEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FAEC0BD9C13D2489E489D70 /* ListingEditorView.swift */; };
 		0D42FE0975D6D11AF7973736 /* DecisionLegacyProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4614FEA9C37987DC185C329 /* DecisionLegacyProjection.swift */; };
+		230B21124EB167131CB89481 /* WarmDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49E790DDA3835D473E31F96E /* WarmDesign.swift */; };
 		24D333F6A0D3E5152811EE3B /* FinalDecisionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E807A87E3AC281AA0A62853 /* FinalDecisionTests.swift */; };
 		25A2F25DC8B0B465709A5C13 /* ReportBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01CB5A970DCA0EA5C07FD5D1 /* ReportBuilder.swift */; };
 		28897A8C204092AEF19211F9 /* ComparisonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA8D1416119ACEF8093016D5 /* ComparisonView.swift */; };
@@ -76,6 +77,7 @@
 		30F51AA364A7F1765BD0F332 /* ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultView.swift; sourceTree = "<group>"; };
 		3250619863214D1828152FD5 /* DecisionEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionEngineTests.swift; sourceTree = "<group>"; };
 		4485C55DBBC1A1446182AF6B /* InspectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectionView.swift; sourceTree = "<group>"; };
+		49E790DDA3835D473E31F96E /* WarmDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WarmDesign.swift; sourceTree = "<group>"; };
 		4AE38A57F4BB849F42123451 /* ListingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListingsView.swift; sourceTree = "<group>"; };
 		57BDF303282788C8835AA3FA /* VerifyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyView.swift; sourceTree = "<group>"; };
 		616280B477221429245E9C4D /* ListingImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListingImageView.swift; sourceTree = "<group>"; };
@@ -146,6 +148,7 @@
 				F8AD371C8339CBCF55545EFB /* VerificationTaskDetailView.swift */,
 				D237A43C7C8F7920EBE1AE18 /* VerificationTaskEngine.swift */,
 				57BDF303282788C8835AA3FA /* VerifyView.swift */,
+				49E790DDA3835D473E31F96E /* WarmDesign.swift */,
 			);
 			path = Rental_Comparison;
 			sourceTree = "<group>";
@@ -339,6 +342,7 @@
 				63280B7EA2835DCF8556DA61 /* VerificationTaskDetailView.swift in Sources */,
 				4A76FD691ED11ECC8E3BDA36 /* VerificationTaskEngine.swift in Sources */,
 				9BE975B93BC5869D27D52127 /* VerifyView.swift in Sources */,
+				230B21124EB167131CB89481 /* WarmDesign.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
