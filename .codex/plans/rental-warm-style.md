@@ -79,7 +79,7 @@
 - [x] 建立视觉 token 并重构首页。
 - [x] 运行 Simulator 回归并完成视觉检查。
 - [x] 更新计划，已完成提交前审阅与构建检查。
-- [~] 推送分支并创建以 `codex/ios-card-layout` 为基线的中文 PR。
+- [x] 推送分支并创建以 `codex/ios-card-layout` 为基线的中文草稿 PR：[#13](https://github.com/geekest/Rental_Comparison/pull/13)。
 
 ## 8. 新发现与意外情况
 
@@ -112,4 +112,9 @@
 
 ## 12. 最终结果与复盘
 
-已完成视觉实现、Simulator 验证、视觉 QA、提交前审阅与构建检查，待推送并创建 PR。
+已完成视觉实现、Simulator 验证、视觉 QA、提交前审阅、构建检查与交付。
+
+- 分支：`codex/rental-warm-style`（基线：`codex/ios-card-layout`）。
+- 首个实现提交：`222874b [迭代] 重构房源页亲和视觉`。
+- 验证：iPhone 16e Simulator 全量 XCTest/XCUITest 共 40 项通过；`xcodebuild build` 通过；`git diff --check` 通过；`design-qa.md` 结果为 `passed`。
+- 交付：[草稿 PR #13](https://github.com/geekest/Rental_Comparison/pull/13)。
