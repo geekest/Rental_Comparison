@@ -1,7 +1,7 @@
 # 租房对比开发看板
 
-> 最后盘点：2026-08-19
-> 当前基线：`1393d02`（`codex/ios-card-layout`）
+> 最后盘点：2026-08-20
+> 当前基线：`d0b4731`（`codex/ios-card-layout`）
 > 用途：这是产品开发看板，不替代 `docs/specs/` 中已确认的功能规格。每次开始或完成一个需求时，更新对应任务的状态、验收证据和关联文档。
 
 ## 使用约定
@@ -42,6 +42,10 @@
   - 改动：已加入对比可再次点击撤销；点击卡片非操作区进入详情；图片固定在 16:9 容器内以 fill 裁切；楼层统一展示为“X 楼”。
   - 文件：`Rental_Comparison/ListingsView.swift`、`Rental_Comparison/ListingImageView.swift`、`Rental_ComparisonUITests/RentalComparisonUITests.swift`。
   - 验证：iPhone 16e 模拟器执行 7 个单元测试和 3 个 UI 测试均通过；以用户新增的 4288×2848 照片检查固定裁切、楼层和操作按钮。
+- [x] 重构原生 iOS 房源首页亲和视觉（2026-08-20）
+  - 改动：参考多抓鱼的温暖留白、低饱和色彩与轻分组气质，新增米白/墨色/苔绿视觉 token，重构任务头部、下一步、候选房源卡片与 3 Tab 导航；未复制其品牌、插画或图标。
+  - 文件：`Rental_Comparison/WarmDesign.swift`、`Rental_Comparison/ListingsView.swift`、`Rental_Comparison/RootView.swift`、`Rental_Comparison.xcodeproj/project.pbxproj`、`design-qa.md`。
+  - 验证：iPhone 16e Simulator 完整测试 40 项通过；视觉 QA 已通过，截图存于 `/Users/geekest/Codex/2026-08-20/rental-warm-style/outputs/`。
 
 ## 待确认
 

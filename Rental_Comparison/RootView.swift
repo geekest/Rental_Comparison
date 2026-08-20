@@ -31,23 +31,26 @@ struct RootView: View {
                         onSelectTab: { selectedTab = $0 }
                     )
                 }
-                .tabItem { Label("选房", systemImage: "house") }
+                .tabItem { Label("选房", systemImage: "house.fill") }
                 .tag(AppTab.hunt)
 
                 NavigationStack {
                     ComparisonView()
                 }
-                .tabItem { Label("对比", systemImage: "slider.horizontal.3") }
+                .tabItem { Label("对比", systemImage: "square.split.2x1") }
                 .badge(store.task.comparisonIDs.count)
                 .tag(AppTab.comparison)
 
                 NavigationStack {
                     VerifyView()
                 }
-                .tabItem { Label("待确认", systemImage: "checklist") }
+                .tabItem { Label("待确认", systemImage: "checklist.checked") }
                 .badge(DecisionReadinessEngine.huntBlockerCount(in: store.state))
                 .tag(AppTab.verify)
             }
+            .tint(WarmDesign.moss)
+            .toolbarBackground(WarmDesign.canvas, for: .tabBar)
+            .toolbarBackground(.visible, for: .tabBar)
             .accessibilityIdentifier("mainTabView")
 
             if !store.state.privacyAcknowledged {
@@ -75,12 +78,12 @@ private struct PrivacyNoticeView: View {
 
     var body: some View {
         ZStack {
-            Color(.systemBackground).ignoresSafeArea()
+            WarmDesign.canvas.ignoresSafeArea()
             VStack(alignment: .leading, spacing: 24) {
                 Spacer()
                 Image(systemName: "lock.shield.fill")
                     .font(.system(size: 48))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(WarmDesign.moss)
                     .accessibilityHidden(true)
                 Text("你的房源，只保存在这台设备")
                     .font(.largeTitle.bold())
@@ -91,6 +94,7 @@ private struct PrivacyNoticeView: View {
                     withAnimation { store.acceptPrivacy() }
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(WarmDesign.moss)
                 .controlSize(.large)
                 .frame(maxWidth: .infinity)
                 .accessibilityIdentifier("acceptPrivacyButton")

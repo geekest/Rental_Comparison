@@ -13,18 +13,21 @@ struct ListingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(store.task.completed ? "决策已完成" : "当前选房任务")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.blue)
+            VStack(alignment: .leading, spacing: 26) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label(store.task.completed ? "本次选择已完成" : "正在整理", systemImage: store.task.completed ? "checkmark.seal.fill" : "sparkles")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(WarmDesign.moss)
                     Text(store.task.title)
-                        .font(.largeTitle.bold())
+                        .font(.system(.largeTitle, design: .serif, weight: .bold))
+                        .foregroundStyle(WarmDesign.ink)
                     Text(summaryText)
-                        .foregroundStyle(.secondary)
+                        .font(.subheadline)
+                        .foregroundStyle(WarmDesign.secondaryInk)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal)
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
 
                 NextActionCard(action: NextActionEngine.nextAction(in: store.state)) { destination in
                     switch destination {
@@ -36,7 +39,7 @@ struct ListingsView: View {
                         onSelectTab(.verify)
                     }
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, 20)
 
                 if candidates.isEmpty {
                     ContentUnavailableView(
@@ -46,22 +49,26 @@ struct ListingsView: View {
                     )
                     .frame(minHeight: 360)
                 } else {
-                    ScrollView(.horizontal) {
-                        LazyHStack(alignment: .top, spacing: 16) {
-                            ForEach(candidates) { listing in
-                                ListingCard(
-                                    listing: listing,
-                                    limitMessage: $limitMessage,
-                                    onOpenDetails: { selectedListingID = listing.id }
-                                )
-                                    .containerRelativeFrame(.horizontal, count: 1, span: 1, spacing: 32)
+                    VStack(alignment: .leading, spacing: 12) {
+                        WarmSectionTitle(title: "待选房源", detail: "\(candidates.count) 套")
+                            .padding(.horizontal, 20)
+                        ScrollView(.horizontal) {
+                            LazyHStack(alignment: .top, spacing: 16) {
+                                ForEach(candidates) { listing in
+                                    ListingCard(
+                                        listing: listing,
+                                        limitMessage: $limitMessage,
+                                        onOpenDetails: { selectedListingID = listing.id }
+                                    )
+                                        .containerRelativeFrame(.horizontal, count: 1, span: 1, spacing: 32)
+                                }
                             }
+                            .scrollTargetLayout()
                         }
-                        .scrollTargetLayout()
+                        .contentMargins(.horizontal, 20, for: .scrollContent)
+                        .scrollTargetBehavior(.viewAligned)
+                        .scrollIndicators(.hidden)
                     }
-                    .contentMargins(.horizontal, 20, for: .scrollContent)
-                    .scrollTargetBehavior(.viewAligned)
-                    .scrollIndicators(.hidden)
                 }
 
                 if !eliminated.isEmpty {
@@ -88,11 +95,12 @@ struct ListingsView: View {
                             .buttonStyle(.plain)
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 20)
                 }
             }
-            .padding(.vertical)
+            .padding(.vertical, 16)
         }
+        .background(WarmDesign.canvas)
         .navigationDestination(for: UUID.self) { ListingDetailView(listingID: $0) }
         .navigationDestination(isPresented: Binding(
             get: { selectedListingID != nil },
@@ -108,7 +116,10 @@ struct ListingsView: View {
                     .labelStyle(.iconOnly)
             }
             ToolbarItem(placement: .primaryAction) {
-                Button("添加候选", systemImage: "plus") { showingAdd = true }
+                Button { showingAdd = true } label: {
+                    WarmToolbarIcon(systemImage: "plus")
+                }
+                    .accessibilityLabel("添加候选")
                     .accessibilityIdentifier("addListingButton")
             }
         }
@@ -136,23 +147,27 @@ private struct NextActionCard: View {
 
     var body: some View {
         Button { onSelect(action.destination) } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "arrow.right.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(.blue)
+            HStack(spacing: 16) {
+                Image(systemName: "arrow.right")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(WarmDesign.paper)
+                    .frame(width: 42, height: 42)
+                    .background(WarmDesign.moss, in: Circle())
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("下一步").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                    Text(action.title).font(.headline).foregroundStyle(.primary)
-                    Text(action.detail).font(.subheadline).foregroundStyle(.secondary)
+                    Text("下一步").font(.caption.weight(.bold)).foregroundStyle(WarmDesign.secondaryInk)
+                    Text(action.title).font(.headline).foregroundStyle(WarmDesign.ink)
+                    Text(action.detail).font(.subheadline).foregroundStyle(WarmDesign.secondaryInk)
+                        .lineLimit(2)
                 }
                 Spacer()
-                Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+                Image(systemName: "chevron.right").font(.caption.weight(.bold)).foregroundStyle(WarmDesign.moss)
             }
-            .padding()
+            .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(.plain)
-        .background(.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(WarmDesign.apricotWash.opacity(0.72), in: RoundedRectangle(cornerRadius: WarmDesign.corner, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: WarmDesign.corner, style: .continuous).stroke(WarmDesign.line.opacity(0.75), lineWidth: 1))
     }
 }
 
@@ -167,7 +182,7 @@ private struct ListingCard: View {
             ZStack(alignment: .topTrailing) {
                 ListingImageView(listing: listing)
                 if listing.focused {
-                    StatusPill(text: "重点", systemImage: "star.fill", color: .orange)
+                    StatusPill(text: "重点考虑", systemImage: "star.fill", color: WarmDesign.warning)
                         .padding(12)
                 }
             }
@@ -175,27 +190,30 @@ private struct ListingCard: View {
             .frame(maxWidth: .infinity)
             .aspectRatio(16.0 / 9.0, contentMode: .fit)
             .clipped()
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text(listing.name)
-                    .font(.title2.bold())
+                    .font(.system(.title2, design: .serif, weight: .bold))
+                    .foregroundStyle(WarmDesign.ink)
                     .lineLimit(1)
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(listing.rent.formattedMoney(currency: listing.currency)).font(.title.bold())
-                    Text("/ 月").foregroundStyle(.secondary)
+                    Text(listing.rent.formattedMoney(currency: listing.currency)).font(.title.bold()).foregroundStyle(WarmDesign.ink)
+                    Text("/ 月").foregroundStyle(WarmDesign.secondaryInk)
                 }
                 Label(commuteText.isEmpty ? "通勤" : commuteText, systemImage: listing.commuteMode?.symbol ?? "clock")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(WarmDesign.secondaryInk)
                     .opacity(commuteText.isEmpty ? 0 : 1)
                     .accessibilityHidden(commuteText.isEmpty)
                 HStack(spacing: 8) {
                     StatusPill(text: readinessText, systemImage: readinessSymbol, color: readinessColor)
                     if readiness.blockerCount > 0 {
-                        Text("\(readiness.blockerCount) 项阻塞")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.orange)
+                            Text("\(readiness.blockerCount) 项阻塞")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(WarmDesign.warning)
                     } else if hasUnknownCosts {
-                        Text("费用待确认")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.orange)
+                            Text("费用待确认")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(WarmDesign.warning)
                     }
                 }
                 HStack(spacing: 12) {
@@ -206,23 +224,25 @@ private struct ListingCard: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
+                    .tint(WarmDesign.moss)
                     .accessibilityIdentifier("comparisonButton_\(listing.id.uuidString)")
                     NavigationLink(value: listing.id) {
                         Text("查看详情")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(WarmDesign.moss)
                     .accessibilityIdentifier("listingDetailButton_\(listing.id.uuidString)")
                 }
                 .frame(maxWidth: .infinity)
             }
             .padding([.horizontal, .bottom])
         }
-        .background(.background, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .shadow(color: .black.opacity(0.08), radius: 20, y: 8)
+        .background(WarmDesign.paper, in: RoundedRectangle(cornerRadius: WarmDesign.corner, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: WarmDesign.corner, style: .continuous).stroke(WarmDesign.line.opacity(0.65), lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: WarmDesign.corner, style: .continuous))
         .padding(.vertical, 4)
-        .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: WarmDesign.corner, style: .continuous))
         .onTapGesture(perform: onOpenDetails)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("listingCard_\(listing.id.uuidString)")
