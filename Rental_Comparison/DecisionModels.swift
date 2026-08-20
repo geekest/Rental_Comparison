@@ -246,6 +246,19 @@ struct DecisionAppState: Codable, Hashable {
     var events: [DecisionEventRecord]
 }
 
+struct DecisionPreferences: Codable, Hashable {
+    var defaultCurrency = "CNY"
+    var defaultExpectedStayMonths = 12
+    var showEliminatedOptions = true
+}
+
+struct DecisionWorkspace: Codable, Hashable {
+    var version = 1
+    var currentTaskID: UUID
+    var tasks: [DecisionAppState]
+    var preferences = DecisionPreferences()
+}
+
 enum FactKey {
     static let monthlyRent = "monthly_rent"
     static let rentalType = "rental_type"
