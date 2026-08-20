@@ -113,3 +113,8 @@ private struct InspectionItemSection: View {
         }
     }
 }
+
+#Preview("检查") {
+    NavigationStack { InspectionView(listingID: Fixtures.xuhuiID) }
+        .environment(AppStore(persistence: .init(loadV2: { nil }, loadV1: { nil }, saveV2: { _ in }), useFixtures: true))
+}

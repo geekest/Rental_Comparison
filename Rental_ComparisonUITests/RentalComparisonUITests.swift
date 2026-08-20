@@ -12,12 +12,15 @@ final class RentalComparisonUITests: XCTestCase {
 
     func testMainTabsOpenDecisionScreens() {
         XCTAssertTrue(app.staticTexts["上海租房计划"].waitForExistence(timeout: 8))
-        app.tabBars.buttons["对比"].tap()
-        XCTAssertTrue(app.navigationBars["比较房源"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["主要差异"].exists)
         app.tabBars.buttons["待确认"].tap()
         XCTAssertTrue(app.navigationBars["待确认"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["下一次需要确认"].exists)
+        app.tabBars.buttons["对比"].tap()
+        XCTAssertTrue(app.navigationBars["比较房源"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["主要差异"].exists)
+        app.tabBars.buttons["设置"].tap()
+        XCTAssertTrue(app.navigationBars["设置"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["常用偏好"].exists)
     }
 
     func testQuickCaptureAllowsNameWithoutRent() {
@@ -58,6 +61,7 @@ final class RentalComparisonUITests: XCTestCase {
         XCTAssertTrue(card.waitForExistence(timeout: 5))
         app.buttons["listingDetailButton_\(listingID)"].tap()
         XCTAssertTrue(app.navigationBars["徐汇 · 一室一厅"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.textFields["房源名称"].exists)
         let scheduleButton = app.buttons["scheduleViewingButton"]
         for _ in 0..<4 where !scheduleButton.isHittable {
             app.swipeUp()

@@ -42,3 +42,9 @@ struct StatusPill: View {
             .background(color.opacity(0.12), in: Capsule())
     }
 }
+
+#Preview("房源图片") {
+    ListingImageView(listing: Fixtures.initialState.task.listings[0])
+        .frame(height: 220)
+        .padding()
+}

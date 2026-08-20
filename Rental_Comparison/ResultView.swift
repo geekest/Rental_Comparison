@@ -66,3 +66,8 @@ struct ResultView: View {
         reportURL = try? ReportBuilder.writeTemporaryReport(for: store.state)
     }
 }
+
+#Preview("决策结果") {
+    NavigationStack { ResultView(finalListingID: Fixtures.xuhuiID) }
+        .environment(AppStore(persistence: .init(loadV2: { nil }, loadV1: { nil }, saveV2: { _ in }), useFixtures: true))
+}

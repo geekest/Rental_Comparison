@@ -181,6 +181,11 @@ struct ViewingModeView: View {
     }
 }
 
+#Preview("待确认") {
+    NavigationStack { VerifyView() }
+        .environment(AppStore(persistence: .init(loadV2: { nil }, loadV1: { nil }, saveV2: { _ in }), useFixtures: true))
+}
+
 private extension VerificationTaskType {
     var symbol: String {
         switch self {

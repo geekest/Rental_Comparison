@@ -184,3 +184,8 @@ struct ListingEditorView: View {
         Binding(get: { draft[keyPath: keyPath] }, set: { draft[keyPath: keyPath] = $0 })
     }
 }
+
+#Preview("房源编辑") {
+    ListingEditorView()
+        .environment(AppStore(persistence: .init(loadV2: { nil }, loadV1: { nil }, saveV2: { _ in }), useFixtures: true))
+}

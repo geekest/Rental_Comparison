@@ -46,3 +46,12 @@ struct WarmToolbarIcon: View {
             .overlay(Circle().stroke(WarmDesign.line.opacity(0.75), lineWidth: 1))
     }
 }
+
+#Preview("设计组件") {
+    VStack(spacing: 20) {
+        WarmSectionTitle(title: "下一步", detail: "3 项")
+        WarmToolbarIcon(systemImage: "gearshape")
+    }
+    .padding()
+    .background(WarmDesign.canvas)
+}

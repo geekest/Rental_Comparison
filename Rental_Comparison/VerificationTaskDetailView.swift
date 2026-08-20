@@ -77,3 +77,8 @@ struct VerificationTaskDetailView: View {
         }
     }
 }
+
+#Preview("验证任务") {
+    NavigationStack { VerificationTaskDetailView(taskID: Fixtures.xuhuiID) }
+        .environment(AppStore(persistence: .init(loadV2: { nil }, loadV1: { nil }, saveV2: { _ in }), useFixtures: true))
+}
