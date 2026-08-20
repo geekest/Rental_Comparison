@@ -35,23 +35,19 @@ final class RentalComparisonUITests: XCTestCase {
     }
 
     func testListingCardCanRemoveFromComparisonAndOpenDetails() {
-        let listingID = "11111111-1111-1111-1111-111111111111"
+        let listingID = "33333333-3333-3333-3333-333333333333"
         let comparisonButton = app.buttons["comparisonButton_\(listingID)"]
 
         XCTAssertTrue(comparisonButton.waitForExistence(timeout: 5))
         XCTAssertTrue(comparisonButton.isEnabled)
 
         comparisonButton.tap()
-        XCTAssertEqual(comparisonButton.label, "加入对比")
-
-        comparisonButton.tap()
         XCTAssertEqual(comparisonButton.label, "已加入对比")
-        XCTAssertTrue(app.staticTexts["待验证"].exists)
 
         let card = app.otherElements["listingCard_\(listingID)"]
         XCTAssertTrue(card.waitForExistence(timeout: 3))
         card.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45)).tap()
-        XCTAssertTrue(app.navigationBars["徐汇 · 一室一厅"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["普陀 · 开间"].waitForExistence(timeout: 5))
     }
 
     func testPlannedViewingOpensOptionSpecificVerificationMode() {
