@@ -2,8 +2,9 @@ import SwiftUI
 
 enum AppTab: Hashable {
     case hunt
-    case comparison
     case verify
+    case comparison
+    case settings
 }
 
 struct RootView: View {
@@ -35,18 +36,22 @@ struct RootView: View {
                 .tag(AppTab.hunt)
 
                 NavigationStack {
+                    VerifyView()
+                }
+                .tabItem { Label("待确认", systemImage: "checklist.checked") }
+                .badge(DecisionReadinessEngine.huntBlockerCount(in: store.state))
+                .tag(AppTab.verify)
+
+                NavigationStack {
                     ComparisonView()
                 }
                 .tabItem { Label("对比", systemImage: "square.split.2x1") }
                 .badge(store.task.comparisonIDs.count)
                 .tag(AppTab.comparison)
 
-                NavigationStack {
-                    VerifyView()
-                }
-                .tabItem { Label("待确认", systemImage: "checklist.checked") }
-                .badge(DecisionReadinessEngine.huntBlockerCount(in: store.state))
-                .tag(AppTab.verify)
+                NavigationStack { SettingsView() }
+                    .tabItem { Label("设置", systemImage: "gearshape") }
+                    .tag(AppTab.settings)
             }
             .tint(WarmDesign.moss)
             .toolbarBackground(WarmDesign.canvas, for: .tabBar)
@@ -112,10 +117,40 @@ private struct TaskSettingsView: View {
     @State private var city = ""
     @State private var destination = ""
     @State private var expectedMonths = 12
+    @State private var isCreating = false
 
     var body: some View {
         NavigationStack {
             Form {
+                Section("我的选房任务") {
+                    ForEach(store.tasks) { task in
+                        Button {
+                            load(task)
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(task.title).foregroundStyle(WarmDesign.ink)
+                                    Text("\(task.city.isEmpty ? "城市待补充" : task.city) · \(task.listings.count) 套候选")
+                                        .font(.caption).foregroundStyle(WarmDesign.secondaryInk)
+                                }
+                                Spacer()
+                                if task.id == store.task.id { Image(systemName: "checkmark.circle.fill").foregroundStyle(WarmDesign.moss) }
+                            }
+                        }
+                        .swipeActions {
+                            if store.tasks.count > 1 {
+                                Button("删除", role: .destructive) { store.deleteTask(task.id) }
+                            }
+                        }
+                    }
+                    Button("新建选房任务", systemImage: "plus") {
+                        isCreating = true
+                        title = ""
+                        city = ""
+                        destination = ""
+                        expectedMonths = store.preferences.defaultExpectedStayMonths
+                    }
+                }
                 Section("选房任务") {
                     TextField("任务名称", text: $title)
                     TextField("城市", text: $city)
@@ -146,11 +181,15 @@ private struct TaskSettingsView: View {
                 ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("保存") {
-                        store.updateTask {
-                            $0.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
-                            $0.city = city.trimmingCharacters(in: .whitespacesAndNewlines)
-                            $0.commuteDestination = destination.trimmingCharacters(in: .whitespacesAndNewlines)
-                            $0.expectedMonths = expectedMonths
+                        if isCreating {
+                            store.createTask(title: title, city: city, destination: destination, expectedMonths: expectedMonths)
+                        } else {
+                            store.updateTask {
+                                $0.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+                                $0.city = city.trimmingCharacters(in: .whitespacesAndNewlines)
+                                $0.commuteDestination = destination.trimmingCharacters(in: .whitespacesAndNewlines)
+                                $0.expectedMonths = expectedMonths
+                            }
                         }
                         dismiss()
                     }
@@ -158,12 +197,18 @@ private struct TaskSettingsView: View {
                 }
             }
             .onAppear {
-                title = store.task.title
-                city = store.task.city
-                destination = store.task.commuteDestination
-                expectedMonths = store.task.expectedMonths
+                load(store.task)
             }
         }
+    }
+
+    private func load(_ task: RentalTask) {
+        store.switchTask(to: task.id)
+        isCreating = false
+        title = task.title
+        city = task.city
+        destination = task.commuteDestination
+        expectedMonths = task.expectedMonths
     }
 }
 
