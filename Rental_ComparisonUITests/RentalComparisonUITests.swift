@@ -34,12 +34,15 @@ final class RentalComparisonUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["快速添加候选"].waitForNonExistence(timeout: 5))
     }
 
-    func testListingCardCanRemoveFromComparisonAndOpenDetails() {
+    func testListingCardCanJoinComparisonAndOpenDetails() {
         let listingID = "33333333-3333-3333-3333-333333333333"
+        let firstCard = app.otherElements["listingCard_11111111-1111-1111-1111-111111111111"]
+        XCTAssertTrue(firstCard.waitForExistence(timeout: 5))
+        firstCard.swipeLeft()
         let comparisonButton = app.buttons["comparisonButton_\(listingID)"]
 
         XCTAssertTrue(comparisonButton.waitForExistence(timeout: 5))
-        XCTAssertTrue(comparisonButton.isEnabled)
+        XCTAssertEqual(comparisonButton.label, "加入对比")
 
         comparisonButton.tap()
         XCTAssertEqual(comparisonButton.label, "已加入对比")
