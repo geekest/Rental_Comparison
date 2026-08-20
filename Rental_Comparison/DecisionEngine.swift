@@ -69,8 +69,7 @@ enum DecisionEngine {
 }
 
 extension Double {
-    func formattedMoney(currency: String = "CNY") -> String {
-        let code = currency == "人民币" ? "CNY" : currency
-        return formatted(.currency(code: code).precision(.fractionLength(0)).locale(Locale(identifier: "zh_CN")))
+    func formattedMoney(currency: String, locale: Locale = .autoupdatingCurrent) -> String {
+        formatted(.currency(code: currency.uppercased()).precision(.fractionLength(0)).locale(locale))
     }
 }

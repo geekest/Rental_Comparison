@@ -1,24 +1,24 @@
 import SwiftUI
 
 enum AppTab: Hashable {
-    case listings
+    case hunt
     case comparison
-    case conditions
+    case verify
 }
 
 struct RootView: View {
     @Environment(AppStore.self) private var store
-    @State private var selectedTab: AppTab = .listings
+    @State private var selectedTab: AppTab = .hunt
     @State private var showingTaskSettings = false
 
     init() {
         let arguments = ProcessInfo.processInfo.arguments
         if arguments.contains("-startComparison") {
             _selectedTab = State(initialValue: .comparison)
-        } else if arguments.contains("-startConditions") {
-            _selectedTab = State(initialValue: .conditions)
+        } else if arguments.contains("-startVerify") {
+            _selectedTab = State(initialValue: .verify)
         } else {
-            _selectedTab = State(initialValue: .listings)
+            _selectedTab = State(initialValue: .hunt)
         }
     }
 
@@ -26,24 +26,31 @@ struct RootView: View {
         ZStack {
             TabView(selection: $selectedTab) {
                 NavigationStack {
-                    ListingsView(showingTaskSettings: $showingTaskSettings)
+                    ListingsView(
+                        showingTaskSettings: $showingTaskSettings,
+                        onSelectTab: { selectedTab = $0 }
+                    )
                 }
-                .tabItem { Label("房源", systemImage: "house") }
-                .tag(AppTab.listings)
+                .tabItem { Label("选房", systemImage: "house.fill") }
+                .tag(AppTab.hunt)
 
                 NavigationStack {
                     ComparisonView()
                 }
-                .tabItem { Label("对比", systemImage: "slider.horizontal.3") }
+                .tabItem { Label("对比", systemImage: "square.split.2x1") }
                 .badge(store.task.comparisonIDs.count)
                 .tag(AppTab.comparison)
 
                 NavigationStack {
-                    ConditionsView()
+                    VerifyView()
                 }
-                .tabItem { Label("条件", systemImage: "checkmark.circle") }
-                .tag(AppTab.conditions)
+                .tabItem { Label("待确认", systemImage: "checklist.checked") }
+                .badge(DecisionReadinessEngine.huntBlockerCount(in: store.state))
+                .tag(AppTab.verify)
             }
+            .tint(WarmDesign.moss)
+            .toolbarBackground(WarmDesign.canvas, for: .tabBar)
+            .toolbarBackground(.visible, for: .tabBar)
             .accessibilityIdentifier("mainTabView")
 
             if !store.state.privacyAcknowledged {
@@ -71,12 +78,12 @@ private struct PrivacyNoticeView: View {
 
     var body: some View {
         ZStack {
-            Color(.systemBackground).ignoresSafeArea()
+            WarmDesign.canvas.ignoresSafeArea()
             VStack(alignment: .leading, spacing: 24) {
                 Spacer()
                 Image(systemName: "lock.shield.fill")
                     .font(.system(size: 48))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(WarmDesign.moss)
                     .accessibilityHidden(true)
                 Text("你的房源，只保存在这台设备")
                     .font(.largeTitle.bold())
@@ -87,6 +94,7 @@ private struct PrivacyNoticeView: View {
                     withAnimation { store.acceptPrivacy() }
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(WarmDesign.moss)
                 .controlSize(.large)
                 .frame(maxWidth: .infinity)
                 .accessibilityIdentifier("acceptPrivacyButton")
@@ -113,6 +121,15 @@ private struct TaskSettingsView: View {
                     TextField("城市", text: $city)
                     TextField("主要通勤目的地", text: $destination)
                     Stepper("预计居住 \(expectedMonths) 个月", value: $expectedMonths, in: 1...60)
+                }
+                Section {
+                    NavigationLink("管理优先级与硬性条件") {
+                        ConditionsView()
+                    }
+                } header: {
+                    Text("选房重点")
+                } footer: {
+                    Text("优先级用于帮助识别冲突，不会生成综合评分或自动推荐。")
                 }
                 Section {
                     Button("恢复示例数据", role: .destructive) {
@@ -152,5 +169,5 @@ private struct TaskSettingsView: View {
 
 #Preview {
     RootView()
-        .environment(AppStore(persistence: .init(load: { nil }, save: { _ in }), useFixtures: true))
+        .environment(AppStore(persistence: .init(loadV2: { nil }, loadV1: { nil }, saveV2: { _ in }), useFixtures: true))
 }
