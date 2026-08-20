@@ -217,15 +217,23 @@ private struct ListingCard: View {
                     }
                 }
                 HStack(spacing: 12) {
-                    Button {
-                        if !store.toggleComparison(listing.id) { limitMessage = "一次最多比较 5 套候选房源。" }
-                    } label: {
-                        Text(store.task.comparisonIDs.contains(listing.id) ? "已加入对比" : "加入对比")
+                    if store.task.comparisonIDs.contains(listing.id) {
+                        Button("已加入对比") {}
                             .frame(maxWidth: .infinity)
+                            .buttonStyle(.bordered)
+                            .tint(WarmDesign.moss)
+                            .disabled(true)
+                            .accessibilityIdentifier("comparisonButton_\(listing.id.uuidString)")
+                    } else {
+                        Button {
+                            if !store.toggleComparison(listing.id) { limitMessage = "一次最多比较 5 套候选房源。" }
+                        } label: {
+                            Text("加入对比").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(WarmDesign.moss)
+                        .accessibilityIdentifier("comparisonButton_\(listing.id.uuidString)")
                     }
-                    .buttonStyle(.bordered)
-                    .tint(WarmDesign.moss)
-                    .accessibilityIdentifier("comparisonButton_\(listing.id.uuidString)")
                     NavigationLink(value: listing.id) {
                         Text("查看详情")
                             .frame(maxWidth: .infinity)
@@ -291,10 +299,16 @@ private struct ListingCard: View {
 
 }
 
+#Preview("选房") {
+    NavigationStack {
+        ListingsView(showingTaskSettings: .constant(false), onSelectTab: { _ in })
+    }
+    .environment(AppStore(persistence: .init(loadV2: { nil }, loadV1: { nil }, saveV2: { _ in }), useFixtures: true))
+}
+
 struct ListingDetailView: View {
     @Environment(AppStore.self) private var store
     let listingID: UUID
-    @State private var showingEdit = false
     @State private var showingEliminate = false
     @State private var eliminationReason = ""
     @State private var showingAddUnknown = false
@@ -309,17 +323,15 @@ struct ListingDetailView: View {
                     ListingImageView(listing: listing)
                         .frame(height: 240)
                         .listRowInsets(EdgeInsets())
+                    ListingInlineFieldsView(listing: listingBinding)
                     blockerSection
                     decisionFactSection(for: listing)
                     suggestedFactsSection
-                    overviewSection(for: listing)
                     decisionSection(for: listing)
                     viewingSection(for: listing)
                     eliminationSection(for: listing)
                 }
                 .navigationTitle(listing.name)
-                .toolbar { Button("完整信息") { showingEdit = true } }
-                .sheet(isPresented: $showingEdit) { ListingEditorView(existing: listing) }
                 .alert("淘汰这套房源？", isPresented: $showingEliminate) {
                     TextField("原因（可选）", text: $eliminationReason)
                     Button("取消", role: .cancel) {}
@@ -339,6 +351,13 @@ struct ListingDetailView: View {
                 ContentUnavailableView("房源不存在", systemImage: "house.slash")
             }
         }
+    }
+
+    private var listingBinding: Binding<Listing> {
+        Binding(
+            get: { store.task.listings.first { $0.id == listingID } ?? Listing(name: "", city: "", rentalType: .entire, rent: 0) },
+            set: { store.upsert($0) }
+        )
     }
 
     private func fact(for key: String) -> Fact? {
