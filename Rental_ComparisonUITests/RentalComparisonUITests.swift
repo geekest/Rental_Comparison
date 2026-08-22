@@ -46,7 +46,7 @@ final class RentalComparisonUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.navigationBars["比较房源"].waitForExistence(timeout: 5))
-        app.buttons["查看完整对比"].tap()
+        app.buttons["对比详细数据"].tap()
 
         let costScroll = app.scrollViews["comparisonSection-真实成本"]
         let commuteMetric = app.descendants(matching: .any)

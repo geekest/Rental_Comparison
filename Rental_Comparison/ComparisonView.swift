@@ -124,7 +124,7 @@ struct ComparisonView: View {
                         }
                         .accessibilityIdentifier("comparisonAnalysisDisclosure")
 
-                        Button(showingFullMatrix ? "收起完整对比" : "查看完整对比") {
+                        Button(showingFullMatrix ? "收起详细数据" : "对比详细数据") {
                             withAnimation { showingFullMatrix.toggle() }
                         }
                         .frame(maxWidth: .infinity)
