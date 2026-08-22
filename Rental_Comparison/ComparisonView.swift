@@ -1,10 +1,101 @@
 import SwiftUI
 
+private final class ComparisonScrollCoordinator {
+    private final class WeakScrollView {
+        weak var value: UIScrollView?
+
+        init(_ value: UIScrollView) {
+            self.value = value
+        }
+    }
+
+    private var scrollViews: [ObjectIdentifier: WeakScrollView] = [:]
+    private var observations: [ObjectIdentifier: NSKeyValueObservation] = [:]
+    private var isSynchronizing = false
+
+    func register(_ scrollView: UIScrollView) {
+        let id = ObjectIdentifier(scrollView)
+        guard observations[id] == nil else { return }
+
+        scrollViews[id] = WeakScrollView(scrollView)
+        observations[id] = scrollView.observe(\UIScrollView.contentOffset, options: [.new]) { [weak self, weak scrollView] _, _ in
+            guard let scrollView else { return }
+            self?.synchronize(from: scrollView)
+        }
+    }
+
+    private func synchronize(from source: UIScrollView) {
+        guard !isSynchronizing else { return }
+        isSynchronizing = true
+        defer { isSynchronizing = false }
+
+        let sourceOffset = source.contentOffset.x
+        scrollViews = scrollViews.filter { $0.value.value != nil }
+        for (id, weakScrollView) in scrollViews {
+            guard let target = weakScrollView.value, id != ObjectIdentifier(source) else { continue }
+            let minimumX = -target.adjustedContentInset.left
+            let maximumX = max(minimumX, target.contentSize.width - target.bounds.width + target.adjustedContentInset.right)
+            let targetX = min(max(sourceOffset, minimumX), maximumX)
+            guard abs(target.contentOffset.x - targetX) > 0.5 else { continue }
+
+            var targetOffset = target.contentOffset
+            targetOffset.x = targetX
+            target.setContentOffset(targetOffset, animated: false)
+        }
+    }
+}
+
+private struct ComparisonScrollResolver: UIViewRepresentable {
+    let coordinator: ComparisonScrollCoordinator
+
+    func makeUIView(context: Context) -> ComparisonScrollResolverView {
+        let view = ComparisonScrollResolverView()
+        view.resolve = { [coordinator] scrollView in
+            coordinator.register(scrollView)
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: ComparisonScrollResolverView, context: Context) {}
+}
+
+private final class ComparisonScrollResolverView: UIView {
+    var resolve: ((UIScrollView) -> Void)?
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        isUserInteractionEnabled = false
+        backgroundColor = .clear
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        guard window != nil else { return }
+
+        DispatchQueue.main.async { [weak self] in
+            var ancestor = self?.superview
+            while let view = ancestor {
+                if let scrollView = view as? UIScrollView {
+                    self?.resolve?(scrollView)
+                    return
+                }
+                ancestor = view.superview
+            }
+        }
+    }
+}
+
 struct ComparisonView: View {
     @Environment(AppStore.self) private var store
     @State private var showingManager = false
     @State private var showingFinal = false
     @State private var showingFullMatrix = false
+    @State private var comparisonScrollCoordinator = ComparisonScrollCoordinator()
 
     private var listings: [Listing] { store.comparisonListings }
 
@@ -22,7 +113,7 @@ struct ComparisonView: View {
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 28) {
-                        ComparisonHeader(listings: listings)
+                        ComparisonHeader(listings: listings, scrollCoordinator: comparisonScrollCoordinator)
 
                         DifferenceFirstSummary(listings: listings)
 
@@ -34,7 +125,12 @@ struct ComparisonView: View {
                         .padding(.horizontal)
 
                         if showingFullMatrix {
-                            ComparisonSection(title: "真实成本", subtitle: "月租与固定费用的月均支出", symbol: "wallet.pass") { listing in
+                            ComparisonSection(
+                                title: "真实成本",
+                                subtitle: "月租与固定费用的月均支出",
+                                symbol: "wallet.pass",
+                                scrollCoordinator: comparisonScrollCoordinator
+                            ) { listing in
                             let summary = DecisionEngine.calculateCosts(for: listing, expectedMonths: store.task.expectedMonths)
                             VStack(alignment: .leading, spacing: 8) {
                                 MetricValue(summary.monthlyHousing.formattedMoney(currency: listing.currency), caption: "月均居住成本")
@@ -45,15 +141,26 @@ struct ComparisonView: View {
                             }
                             }
 
-                            ComparisonSection(title: "通勤时间", subtitle: "前往 \(store.task.commuteDestination.isEmpty ? "主要目的地" : store.task.commuteDestination) 的单程记录", symbol: "clock") { listing in
+                            ComparisonSection(
+                                title: "通勤时间",
+                                subtitle: "前往 \(store.task.commuteDestination.isEmpty ? "主要目的地" : store.task.commuteDestination) 的单程记录",
+                                symbol: "clock",
+                                scrollCoordinator: comparisonScrollCoordinator
+                            ) { listing in
                             VStack(alignment: .leading, spacing: 8) {
                                 MetricValue(listing.commuteMinutes.map { "\($0) 分钟" } ?? "待补充", caption: listing.commuteMode?.title ?? "方式待补充")
+                                    .accessibilityIdentifier("comparisonMetric-commute-\(listing.id.uuidString)")
                                 Text(listing.commuteFare.map { "\($0.formattedMoney(currency: listing.currency)) / 次" } ?? "通勤支出待补充")
                                     .foregroundStyle(.secondary)
                             }
                             }
 
-                            ComparisonSection(title: "条件风险", subtitle: "硬性冲突、未知项与普通偏好", symbol: "checklist") { listing in
+                            ComparisonSection(
+                                title: "条件风险",
+                                subtitle: "硬性冲突、未知项与普通偏好",
+                                symbol: "checklist",
+                                scrollCoordinator: comparisonScrollCoordinator
+                            ) { listing in
                             VStack(alignment: .leading, spacing: 8) {
                                 let conflicts = DecisionEngine.requiredConflicts(in: store.task, listing: listing)
                                 if conflicts.isEmpty {
@@ -70,7 +177,12 @@ struct ComparisonView: View {
                             }
                             }
 
-                            ComparisonSection(title: "看房记录", subtitle: "已记录的现场异常", symbol: "eye") { listing in
+                            ComparisonSection(
+                                title: "看房记录",
+                                subtitle: "已记录的现场异常",
+                                symbol: "eye",
+                                scrollCoordinator: comparisonScrollCoordinator
+                            ) { listing in
                             let issues = DecisionEngine.inspectionIssues(in: listing)
                             VStack(alignment: .leading, spacing: 8) {
                                 if issues.isEmpty {
@@ -125,6 +237,7 @@ struct ComparisonView: View {
 private struct ComparisonHeader: View {
     @Environment(AppStore.self) private var store
     let listings: [Listing]
+    let scrollCoordinator: ComparisonScrollCoordinator
 
     var body: some View {
         ScrollView(.horizontal) {
@@ -145,6 +258,7 @@ private struct ComparisonHeader: View {
                     .frame(width: 180, alignment: .leading)
                 }
             }
+            .background(ComparisonScrollResolver(coordinator: scrollCoordinator))
         }
         .contentMargins(.horizontal, 20, for: .scrollContent)
         .scrollIndicators(.hidden)
@@ -252,6 +366,7 @@ private struct ComparisonSection<Content: View>: View {
     let title: String
     let subtitle: String
     let symbol: String
+    let scrollCoordinator: ComparisonScrollCoordinator
     @ViewBuilder let content: (Listing) -> Content
     @Environment(AppStore.self) private var store
 
@@ -266,11 +381,13 @@ private struct ComparisonSection<Content: View>: View {
                             .frame(width: 220, alignment: .leading)
                             .padding(.horizontal, 16)
                             .frame(maxHeight: .infinity, alignment: .top)
-                            .overlay(alignment: .trailing) { Divider() }
+                        .overlay(alignment: .trailing) { Divider() }
                     }
+                    .background(ComparisonScrollResolver(coordinator: scrollCoordinator))
                 }
             }
             .scrollIndicators(.hidden)
+            .accessibilityIdentifier("comparisonSection-\(title)")
         }
         .padding(.horizontal)
     }

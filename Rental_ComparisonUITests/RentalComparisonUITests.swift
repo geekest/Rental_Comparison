@@ -23,6 +23,31 @@ final class RentalComparisonUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["常用偏好"].exists)
     }
 
+    func testComparisonSectionsShareHorizontalScrollPosition() {
+        app.terminate()
+        app.launchArguments = ["-uiTesting", "-startComparison"]
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["比较房源"].waitForExistence(timeout: 5))
+        app.buttons["查看完整对比"].tap()
+
+        let costScroll = app.scrollViews["comparisonSection-真实成本"]
+        let commuteMetric = app.descendants(matching: .any)
+            .matching(identifier: "comparisonMetric-commute-22222222-2222-2222-2222-222222222222")
+            .firstMatch
+        XCTAssertTrue(costScroll.waitForExistence(timeout: 3))
+        XCTAssertTrue(commuteMetric.waitForExistence(timeout: 3))
+
+        for _ in 0..<6 where !costScroll.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(costScroll.isHittable)
+        let initialX = commuteMetric.frame.minX
+        costScroll.swipeLeft()
+
+        XCTAssertLessThan(commuteMetric.frame.minX, initialX)
+    }
+
     func testQuickCaptureAllowsNameWithoutRent() {
         app.buttons["addListingButton"].tap()
         XCTAssertTrue(app.textFields["listingNameField"].waitForExistence(timeout: 3))
