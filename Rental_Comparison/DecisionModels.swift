@@ -247,9 +247,24 @@ struct DecisionAppState: Codable, Hashable {
 }
 
 struct DecisionPreferences: Codable, Hashable {
+    var language = AppLanguage.simplifiedChinese
     var defaultCurrency = "CNY"
     var defaultExpectedStayMonths = 12
     var showEliminatedOptions = true
+}
+
+enum AppLanguage: String, Codable, CaseIterable, Identifiable {
+    case simplifiedChinese = "zh-Hans"
+    case english = "en"
+
+    var id: Self { self }
+
+    var displayName: String {
+        switch self {
+        case .simplifiedChinese: "简体中文"
+        case .english: "English"
+        }
+    }
 }
 
 struct DecisionWorkspace: Codable, Hashable {

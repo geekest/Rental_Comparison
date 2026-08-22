@@ -6,11 +6,19 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("常用偏好") {
-                Picker("默认货币", selection: preferenceBinding(\.defaultCurrency)) {
+                Picker("语言", selection: preferenceBinding(\.language)) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.displayName).tag(language)
+                    }
+                }
+                .accessibilityIdentifier("languagePicker")
+
+                Picker("货币单位", selection: preferenceBinding(\.defaultCurrency)) {
                     Text("人民币（CNY）").tag("CNY")
                     Text("港币（HKD）").tag("HKD")
                     Text("美元（USD）").tag("USD")
                 }
+                .accessibilityIdentifier("currencyPicker")
                 Stepper("默认居住 \(store.preferences.defaultExpectedStayMonths) 个月", value: preferenceBinding(\.defaultExpectedStayMonths), in: 1...60)
                 Toggle("显示已淘汰房源", isOn: preferenceBinding(\.showEliminatedOptions))
             }

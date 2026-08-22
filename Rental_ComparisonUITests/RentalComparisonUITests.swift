@@ -21,6 +21,8 @@ final class RentalComparisonUITests: XCTestCase {
         app.tabBars.buttons["设置"].tap()
         XCTAssertTrue(app.navigationBars["设置"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["常用偏好"].exists)
+        XCTAssertTrue(app.buttons["语言"].exists)
+        XCTAssertTrue(app.buttons["货币单位"].exists)
     }
 
     func testQuickCaptureAllowsNameWithoutRent() {

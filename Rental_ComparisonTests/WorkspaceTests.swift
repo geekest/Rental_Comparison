@@ -32,10 +32,12 @@ final class WorkspaceTests: XCTestCase {
         let store = AppStore(persistence: client, useFixtures: true)
 
         store.updatePreferences {
+            $0.language = .english
             $0.defaultCurrency = "HKD"
             $0.defaultExpectedStayMonths = 18
         }
 
+        XCTAssertEqual(savedWorkspace?.preferences.language, .english)
         XCTAssertEqual(savedWorkspace?.preferences.defaultCurrency, "HKD")
         XCTAssertEqual(savedWorkspace?.preferences.defaultExpectedStayMonths, 18)
     }
