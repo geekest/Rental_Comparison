@@ -114,8 +114,6 @@ struct ComparisonView: View {
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 28) {
-                        ComparisonHeader(listings: listings, scrollCoordinator: comparisonScrollCoordinator)
-
                         DisclosureGroup(isExpanded: $showingAnalysis) {
                             DifferenceFirstSummary(listings: listings)
                         } label: {
@@ -238,6 +236,14 @@ struct ComparisonView: View {
         .toolbar { Button("调整") { showingManager = true } }
         .sheet(isPresented: $showingManager) { CompareManagerView() }
         .sheet(isPresented: $showingFinal) { FinalDecisionView() }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if listings.count >= 2 {
+                ComparisonHeader(listings: listings, scrollCoordinator: comparisonScrollCoordinator)
+                    .padding(.vertical, 8)
+                    .background(.background)
+                    .overlay(alignment: .bottom) { Divider() }
+            }
+        }
         .accessibilityIdentifier("comparisonScreen")
     }
 }
@@ -254,7 +260,10 @@ private struct ComparisonHeader: View {
                         ListingImageView(listing: listing)
                             .frame(width: 180, height: 120)
                             .clipShape(RoundedRectangle(cornerRadius: 18))
-                        Text(listing.name).font(.headline).lineLimit(2)
+                        Text(listing.name)
+                            .font(.headline)
+                            .lineLimit(2)
+                            .accessibilityIdentifier("comparisonHeader-\(listing.id.uuidString)")
                         if listing.id == store.task.baselineID {
                             StatusPill(text: "比较基准", systemImage: "pin.fill", color: .blue)
                         } else {
