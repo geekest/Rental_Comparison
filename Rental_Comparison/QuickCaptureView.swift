@@ -94,3 +94,8 @@ struct QuickCaptureView: View {
         }
     }
 }
+
+#Preview("快速添加") {
+    QuickCaptureView()
+        .environment(AppStore(persistence: .init(loadV2: { nil }, loadV1: { nil }, saveV2: { _ in }), useFixtures: true))
+}

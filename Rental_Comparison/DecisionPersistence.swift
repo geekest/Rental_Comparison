@@ -4,6 +4,8 @@ struct DecisionPersistenceClient {
     var loadV2: () throws -> DecisionAppState?
     var loadV1: () throws -> AppState?
     var saveV2: (DecisionAppState) throws -> Void
+    var loadWorkspace: () throws -> DecisionWorkspace? = { nil }
+    var saveWorkspace: (DecisionWorkspace) throws -> Void = { _ in }
 
     static let live = DecisionPersistenceClient(
         loadV2: { try load(DecisionAppState.self, from: stateV2URL()) },
@@ -13,6 +15,13 @@ struct DecisionPersistenceClient {
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             encoder.dateEncodingStrategy = .iso8601
             try encoder.encode(state).write(to: try stateV2URL(), options: .atomic)
+        },
+        loadWorkspace: { try load(DecisionWorkspace.self, from: workspaceURL()) },
+        saveWorkspace: { workspace in
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            encoder.dateEncodingStrategy = .iso8601
+            try encoder.encode(workspace).write(to: try workspaceURL(), options: .atomic)
         }
     )
 
@@ -32,6 +41,10 @@ struct DecisionPersistenceClient {
 
     static func stateV2URL() throws -> URL {
         try PersistenceClient.stateURL().deletingLastPathComponent().appending(path: "state-v2.json")
+    }
+
+    static func workspaceURL() throws -> URL {
+        try PersistenceClient.stateURL().deletingLastPathComponent().appending(path: "decision-workspace-v1.json")
     }
 
     private static func load<T: Decodable>(_ type: T.Type, from url: URL) throws -> T? {

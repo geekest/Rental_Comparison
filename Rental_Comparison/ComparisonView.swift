@@ -501,3 +501,8 @@ private struct FinalDecisionView: View {
         }
     }
 }
+
+#Preview("对比") {
+    NavigationStack { ComparisonView() }
+        .environment(AppStore(persistence: .init(loadV2: { nil }, loadV1: { nil }, saveV2: { _ in }), useFixtures: true))
+}

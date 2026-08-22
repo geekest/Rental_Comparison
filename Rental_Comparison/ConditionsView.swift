@@ -78,3 +78,8 @@ struct ConditionsView: View {
         )
     }
 }
+
+#Preview("条件") {
+    NavigationStack { ConditionsView() }
+        .environment(AppStore(persistence: .init(loadV2: { nil }, loadV1: { nil }, saveV2: { _ in }), useFixtures: true))
+}

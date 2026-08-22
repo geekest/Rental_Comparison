@@ -7,37 +7,106 @@ final class AppStore {
     private(set) var state: DecisionAppState
     private(set) var saveError: String?
     let persistence: DecisionPersistenceClient
+    private var taskStates: [DecisionAppState]
+    private var currentTaskID: UUID
+    private(set) var preferences: DecisionPreferences
 
     init(persistence: DecisionPersistenceClient = .live, useFixtures: Bool = ProcessInfo.processInfo.arguments.contains("-uiTesting")) {
         self.persistence = persistence
         saveError = nil
+        var initialState: DecisionAppState
+        var loadedStates: [DecisionAppState] = []
+        var selectedTaskID: UUID?
+        var loadedPreferences = DecisionPreferences()
         if useFixtures {
-            state = DecisionModelMigration.migrate(Fixtures.initialState)
-            state.privacyAcknowledged = true
+            initialState = DecisionModelMigration.migrate(Fixtures.initialState)
+            initialState.privacyAcknowledged = true
         } else {
             do {
                 if let loaded = try DecisionPersistenceClient.loadOrMigrate(using: persistence) {
-                    state = loaded.state
+                    initialState = loaded.state
                     if case let .v1Fallback(message) = loaded.source {
                         saveError = "已暂时读取旧数据，但升级保存失败：\(message)"
                     }
                 } else {
-                    state = DecisionModelMigration.migrate(Fixtures.initialState)
+                    initialState = DecisionModelMigration.migrate(Fixtures.initialState)
+                }
+                if let workspace = try persistence.loadWorkspace(), !workspace.tasks.isEmpty {
+                    loadedStates = workspace.tasks
+                    selectedTaskID = workspace.currentTaskID
+                    loadedPreferences = workspace.preferences
+                    initialState = workspace.tasks.first(where: { $0.hunt.id == workspace.currentTaskID }) ?? workspace.tasks[0]
                 }
             } catch {
-                state = DecisionModelMigration.migrate(Fixtures.initialState)
+                initialState = DecisionModelMigration.migrate(Fixtures.initialState)
                 saveError = "读取本地数据失败：\(error.localizedDescription)"
             }
         }
+        let states = loadedStates.isEmpty ? [initialState] : loadedStates
+        let selectedState = states.first(where: { $0.hunt.id == (selectedTaskID ?? initialState.hunt.id) }) ?? states[0]
+        state = selectedState
+        taskStates = states
+        currentTaskID = selectedState.hunt.id
+        preferences = loadedPreferences
         refreshDecisionSupport()
     }
 
     var task: RentalTask { DecisionLegacyProjection.task(from: state) }
     var candidateListings: [Listing] { task.listings.filter { $0.status == .candidate } }
     var comparisonListings: [Listing] { DecisionEngine.comparisonListings(in: task) }
+    var tasks: [RentalTask] { taskStates.map(DecisionLegacyProjection.task(from:)) }
 
     func acceptPrivacy() {
         state.privacyAcknowledged = true
+        persist()
+    }
+
+    func createTask(title: String, city: String, destination: String, expectedMonths: Int) {
+        let now = Date.now
+        let taskID = UUID()
+        let task = Hunt(
+            id: taskID,
+            title: title.nilIfBlank ?? "新的选房任务",
+            regionTemplateID: state.hunt.regionTemplateID,
+            city: city.nilIfBlank ?? "",
+            defaultCurrency: preferences.defaultCurrency,
+            expectedStayMonths: expectedMonths,
+            primaryDestination: destination.nilIfBlank,
+            optionIDs: [], criterionIDs: [], comparisonOptionIDs: [], baselineOptionID: nil,
+            finalOptionID: nil, finalReason: nil, status: .active, createdAt: now, updatedAt: now
+        )
+        let newState = DecisionAppState(
+            privacyAcknowledged: state.privacyAcknowledged,
+            hunt: task,
+            options: [], facts: [], evidence: [], criteria: [], unknowns: [], verificationTasks: [], events: []
+        )
+        taskStates.append(newState)
+        state = newState
+        currentTaskID = taskID
+        persist()
+    }
+
+    func switchTask(to id: UUID) {
+        guard let next = taskStates.first(where: { $0.hunt.id == id }) else { return }
+        syncCurrentTask()
+        state = next
+        currentTaskID = id
+        refreshDecisionSupport()
+        persist()
+    }
+
+    func updatePreferences(_ change: (inout DecisionPreferences) -> Void) {
+        change(&preferences)
+        persist()
+    }
+
+    func deleteTask(_ id: UUID) {
+        guard taskStates.count > 1 else { return }
+        taskStates.removeAll { $0.hunt.id == id }
+        if id == currentTaskID {
+            state = taskStates[0]
+            currentTaskID = state.hunt.id
+        }
         persist()
     }
 
@@ -170,6 +239,9 @@ final class AppStore {
 
     func resetToFixtures() {
         state = DecisionModelMigration.migrate(Fixtures.initialState)
+        state.privacyAcknowledged = true
+        taskStates = [state]
+        currentTaskID = state.hunt.id
         refreshDecisionSupport()
         persist()
     }
@@ -258,11 +330,22 @@ final class AppStore {
 
     private func persist() {
         do {
+            syncCurrentTask()
             try persistence.saveV2(state)
+            try persistence.saveWorkspace(.init(currentTaskID: currentTaskID, tasks: taskStates, preferences: preferences))
             saveError = nil
         } catch {
             saveError = "保存失败：\(error.localizedDescription)"
         }
+    }
+
+    private func syncCurrentTask() {
+        guard let index = taskStates.firstIndex(where: { $0.hunt.id == currentTaskID }) else {
+            taskStates = [state]
+            currentTaskID = state.hunt.id
+            return
+        }
+        taskStates[index] = state
     }
 
     private func recordObservation(for task: VerificationTask, state taskState: VerificationTaskState, result: String?, evidenceIDs: [UUID], at now: Date) {

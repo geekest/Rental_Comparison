@@ -173,7 +173,7 @@ struct DecisionEvent: Identifiable, Codable, Hashable {
     var reason: String?
 }
 
-struct RentalTask: Codable, Hashable {
+struct RentalTask: Identifiable, Codable, Hashable {
     var id = UUID()
     var title: String
     var city: String
