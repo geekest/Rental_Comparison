@@ -94,6 +94,7 @@ struct ComparisonView: View {
     @Environment(AppStore.self) private var store
     @State private var showingManager = false
     @State private var showingFinal = false
+    @State private var showingAnalysis = true
     @State private var showingFullMatrix = false
     @State private var comparisonScrollCoordinator = ComparisonScrollCoordinator()
 
@@ -115,7 +116,13 @@ struct ComparisonView: View {
                     LazyVStack(alignment: .leading, spacing: 28) {
                         ComparisonHeader(listings: listings, scrollCoordinator: comparisonScrollCoordinator)
 
-                        DifferenceFirstSummary(listings: listings)
+                        DisclosureGroup(isExpanded: $showingAnalysis) {
+                            DifferenceFirstSummary(listings: listings)
+                        } label: {
+                            Label("对比分析", systemImage: "chart.bar.xaxis")
+                                .font(.title2.bold())
+                        }
+                        .accessibilityIdentifier("comparisonAnalysisDisclosure")
 
                         Button(showingFullMatrix ? "收起完整对比" : "查看完整对比") {
                             withAnimation { showingFullMatrix.toggle() }

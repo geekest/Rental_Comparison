@@ -23,6 +23,23 @@ final class RentalComparisonUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["常用偏好"].exists)
     }
 
+    func testComparisonAnalysisCanCollapseAndExpand() {
+        app.terminate()
+        app.launchArguments = ["-uiTesting", "-startComparison"]
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["比较房源"].waitForExistence(timeout: 5))
+        let disclosure = app.buttons["comparisonAnalysisDisclosure"]
+        XCTAssertTrue(disclosure.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["硬性冲突"].exists)
+
+        disclosure.tap()
+        XCTAssertFalse(app.staticTexts["硬性冲突"].exists)
+
+        disclosure.tap()
+        XCTAssertTrue(app.staticTexts["硬性冲突"].waitForExistence(timeout: 3))
+    }
+
     func testComparisonSectionsShareHorizontalScrollPosition() {
         app.terminate()
         app.launchArguments = ["-uiTesting", "-startComparison"]
