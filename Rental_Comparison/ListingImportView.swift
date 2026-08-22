@@ -3,83 +3,25 @@ import SwiftUI
 import UIKit
 import Vision
 
-enum AddListingRoute: Hashable {
+enum AddListingRoute: Hashable, Identifiable {
     case direct
     case link
     case screenshot
+
+    var id: Self { self }
 }
 
 struct AddListingFlowView: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var route: AddListingRoute?
+    let route: AddListingRoute
 
     var body: some View {
-        Group {
-            if let route {
-                switch route {
-                case .direct:
-                    QuickCaptureView()
-                case .link:
-                    ListingLinkImportView()
-                case .screenshot:
-                    ListingScreenshotImportView()
-                }
-            } else {
-                AddListingMethodView { route = $0 }
-            }
-        }
-        .onDisappear { route = nil }
-    }
-}
-
-private struct AddListingMethodView: View {
-    @Environment(\.dismiss) private var dismiss
-    let onSelect: (AddListingRoute) -> Void
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    Button { onSelect(.direct) } label: {
-                        Label {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("直接录入")
-                                Text("先记下名称，其他信息之后补充")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        } icon: { Image(systemName: "square.and.pencil") }
-                    }
-                    .accessibilityIdentifier("directListingButton")
-
-                    Button { onSelect(.link) } label: {
-                        Label {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("链接导入")
-                                Text("粘贴链接，或从其他 App 分享到这里")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        } icon: { Image(systemName: "link") }
-                    }
-                    .accessibilityIdentifier("linkImportButton")
-
-                    Button { onSelect(.screenshot) } label: {
-                        Label {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("截图识别")
-                                Text("从相册选择房源截图，提取可识别字段")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        } icon: { Image(systemName: "text.viewfinder") }
-                    }
-                    .accessibilityIdentifier("screenshotImportButton")
-                }
-            }
-            .navigationTitle("添加房源")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } } }
+        switch route {
+        case .direct:
+            QuickCaptureView()
+        case .link:
+            ListingLinkImportView()
+        case .screenshot:
+            ListingScreenshotImportView()
         }
     }
 }

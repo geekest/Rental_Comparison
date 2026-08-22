@@ -4,7 +4,7 @@ struct ListingsView: View {
     @Environment(AppStore.self) private var store
     @Binding var showingTaskSettings: Bool
     let onSelectTab: (AppTab) -> Void
-    @State private var showingAddFlow = false
+    @State private var selectedAddRoute: AddListingRoute?
     @State private var limitMessage: String?
     @State private var selectedListingID: UUID?
 
@@ -32,7 +32,7 @@ struct ListingsView: View {
                 NextActionCard(action: NextActionEngine.nextAction(in: store.state)) { destination in
                     switch destination {
                     case .capture:
-                        showingAddFlow = true
+                        selectedAddRoute = .direct
                     case .compare, .finalDecision:
                         onSelectTab(.comparison)
                     case .verify:
@@ -116,14 +116,34 @@ struct ListingsView: View {
                     .labelStyle(.iconOnly)
             }
             ToolbarItem(placement: .primaryAction) {
-                Button { showingAddFlow = true } label: {
-                    WarmToolbarIcon(systemImage: "plus")
+                Menu {
+                    Button("直接录入", systemImage: "square.and.pencil") {
+                        selectedAddRoute = .direct
+                    }
+                    .accessibilityIdentifier("directListingButton")
+
+                    Button("链接导入", systemImage: "link") {
+                        selectedAddRoute = .link
+                    }
+                    .accessibilityIdentifier("linkImportButton")
+
+                    Button("截图识别", systemImage: "text.viewfinder") {
+                        selectedAddRoute = .screenshot
+                    }
+                    .accessibilityIdentifier("screenshotImportButton")
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(WarmDesign.ink)
+                        .frame(width: 44, height: 44)
                 }
-                    .accessibilityLabel("添加候选")
-                    .accessibilityIdentifier("addListingButton")
+                .accessibilityLabel("添加候选")
+                .accessibilityIdentifier("addListingButton")
             }
         }
-        .sheet(isPresented: $showingAddFlow) { AddListingFlowView() }
+        .sheet(item: $selectedAddRoute) { route in
+            AddListingFlowView(route: route)
+        }
         .alert("暂时无法加入对比", isPresented: Binding(
             get: { limitMessage != nil },
             set: { if !$0 { limitMessage = nil } }
