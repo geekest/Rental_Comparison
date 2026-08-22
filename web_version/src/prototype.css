@@ -628,9 +628,18 @@ button {
 }
 .detail-table {
   margin: 0 20px;
+  min-width: calc(var(--comparison-column-count) * 160px);
   border: 1px solid var(--line);
   border-radius: 16px;
   overflow: hidden;
+}
+.detail-table-track,
+.condition-track {
+  display: block;
+}
+.condition-table {
+  min-width: calc(var(--comparison-column-count) * 160px);
+  margin: 0 20px;
 }
 .detail-row {
   padding: 13px 14px;

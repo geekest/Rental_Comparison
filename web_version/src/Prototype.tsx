@@ -624,6 +624,31 @@ function CompareScreen({
     return () => screen.removeEventListener("scroll", updateActiveSection);
   }, [listings.length, onSection]);
 
+  useEffect(() => {
+    if (listings.length < 2) return;
+
+    const screen = document.querySelector<HTMLElement>('[data-testid="compare-screen"]');
+    if (!screen) return;
+
+    const rails = Array.from(screen.querySelectorAll<HTMLElement>(".compare-synced-carousel"));
+    const syncHorizontalOffset = (event: Event) => {
+      const source = event.currentTarget as HTMLElement;
+      const offset = source.scrollLeft;
+      rails.forEach((rail) => {
+        if (rail !== source && rail.scrollLeft !== offset) rail.scrollLeft = offset;
+      });
+    };
+
+    rails.forEach((rail) => {
+      rail.addEventListener("scroll", syncHorizontalOffset, { passive: true });
+    });
+    return () => {
+      rails.forEach((rail) => {
+        rail.removeEventListener("scroll", syncHorizontalOffset);
+      });
+    };
+  }, [listings.length]);
+
   if (listings.length < 2)
     return (
       <MobileScroll className="app-screen" key="compare-empty-screen">
@@ -651,7 +676,11 @@ function CompareScreen({
           <h1>比较房源</h1>
           <button onClick={onManage}>调整</button>
         </header>
-        <Carousel className="compare-head-carousel" contentClassName="compare-head-track" ariaLabel="参与比较的房源">
+        <Carousel
+          className="compare-head-carousel compare-synced-carousel"
+          contentClassName="compare-head-track"
+          ariaLabel="参与比较的房源"
+        >
           {listings.map((listing) => (
             <article className="compare-head" key={listing.id}>
               <img src={listing.imageUrl} alt="" />
@@ -814,25 +843,32 @@ function CompareSectionContent({
           title="条件"
           subtitle="先显示硬性冲突与未知"
         />
-        {task.conditions
-          .filter((condition) => condition.importance !== "ignored")
-          .map((condition) => (
-            <div
-              className="condition-row"
-              key={condition.id}
-              style={{ "--comparison-column-count": listings.length } as React.CSSProperties}
-            >
-              <div>
-                <strong>{condition.name}</strong>
-                <small>{condition.importance === "required" ? "硬性条件" : "偏好条件"}</small>
-              </div>
-              <div className="condition-results">
-                {listings.map((listing) => (
-                  <ResultBadge key={listing.id} result={listing.conditionResults[condition.id] ?? "unknown"} />
-                ))}
-              </div>
-            </div>
-          ))}
+        <Carousel
+          className="condition-carousel compare-synced-carousel"
+          contentClassName="condition-track"
+          ariaLabel="条件对比"
+        >
+          <div
+            className="condition-table"
+            style={{ "--comparison-column-count": listings.length } as React.CSSProperties}
+          >
+            {task.conditions
+              .filter((condition) => condition.importance !== "ignored")
+              .map((condition) => (
+                <div className="condition-row" key={condition.id}>
+                  <div>
+                    <strong>{condition.name}</strong>
+                    <small>{condition.importance === "required" ? "硬性条件" : "偏好条件"}</small>
+                  </div>
+                  <div className="condition-results">
+                    {listings.map((listing) => (
+                      <ResultBadge key={listing.id} result={listing.conditionResults[condition.id] ?? "unknown"} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+          </div>
+        </Carousel>
       </section>
     );
   return (
@@ -880,7 +916,7 @@ function MetricRail({
   cardClassName?: string;
 }) {
   return (
-    <Carousel className="metric-carousel" contentClassName="metric-track" ariaLabel="指标对比">
+    <Carousel className="metric-carousel compare-synced-carousel" contentClassName="metric-track" ariaLabel="指标对比">
       {listings.map((listing) => (
         <article className={`metric-card ${cardClassName}`} key={listing.id}>
           {render(listing)}
@@ -925,16 +961,22 @@ function DetailRows({
   values: (listing: Listing) => string[];
 }) {
   return (
-    <div className="detail-table" style={{ "--comparison-column-count": listings.length } as React.CSSProperties}>
-      {labels.map((label, index) => (
-        <div className="detail-row" key={label}>
-          <strong>{label}</strong>
-          {listings.map((listing) => (
-            <span key={listing.id}>{values(listing)[index]}</span>
-          ))}
-        </div>
-      ))}
-    </div>
+    <Carousel
+      className="detail-table-carousel compare-synced-carousel"
+      contentClassName="detail-table-track"
+      ariaLabel="费用明细对比"
+    >
+      <div className="detail-table" style={{ "--comparison-column-count": listings.length } as React.CSSProperties}>
+        {labels.map((label, index) => (
+          <div className="detail-row" key={label}>
+            <strong>{label}</strong>
+            {listings.map((listing) => (
+              <span key={listing.id}>{values(listing)[index]}</span>
+            ))}
+          </div>
+        ))}
+      </div>
+    </Carousel>
   );
 }
 function SectionTitle({
