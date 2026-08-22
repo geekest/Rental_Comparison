@@ -73,8 +73,8 @@ PR #12 的应用图标改动无法与当前 `main` 自动合并。将保留主�
 - [x] 重建并检查 Xcode 工程资源配置
 - [x] 完成资源元数据、尺寸与工程配置验证
 - [ ] 运行完整构建、测试与资源包验证
-- [ ] 推送分支并确认 PR 状态
-- [ ] 完成复盘
+- [x] 推送分支并确认 PR 状态
+- [x] 完成复盘
 
 ## 8. 新发现与意外情况
 
@@ -118,4 +118,4 @@ PR #12 的应用图标改动无法与当前 `main` 自动合并。将保留主�
 
 ## 12. 最终结果与复盘
 
-Milestone 1 与 Milestone 2 已完成。工程文件通过 XcodeGen 重建而非手工拼接，避免遗漏主分支的构建输入。已验证资源 JSON、两张 PNG 均为 1024 × 1024，以及生成工程包含 `Assets.xcassets` 和 `ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon`。完整 iOS 构建、测试和编译资源包验证受当前终端子进程回收限制，待 PR 合并前在常规 Xcode 或 CI 环境补跑；待推送后补充 GitHub 状态。
+已通过普通合并将 `origin/main` 合入 `codex/app-icon-design`，并使用 XcodeGen 重新生成 `Rental_Comparison.xcodeproj/project.pbxproj`。冲突处理保留了主分支新增加的 Swift、测试和产品文档改动，同时保留了 `Assets.xcassets` 与 AppIcon 的默认/暗黑资源引用。资源 JSON 有效，两张 PNG 均为 1024 × 1024；工程文件包含 `Assets.xcassets` 与 `ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon`；`git diff --check --cached` 通过。提交 `ef1c292` 已推送，GitHub 于推送后确认 PR #12 为 `MERGEABLE / CLEAN`。完整 iOS 构建、测试和编译资源包检查无法在当前终端子进程回收机制下取得完成结果，需在常规 Xcode 或 CI 环境补跑。没有需要加入 `AGENTS.md` 的新规则。
