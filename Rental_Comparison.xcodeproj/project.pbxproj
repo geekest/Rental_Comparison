@@ -89,6 +89,7 @@
 		68D6B413072FBD79DCCA0AA2 /* UnknownEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnknownEngineTests.swift; sourceTree = "<group>"; };
 		6DFFB719EF1FAD07F66FACE4 /* Rental_Comparison.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Rental_Comparison.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6E105BCD31E8C5D82A2F90B0 /* DecisionModelMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionModelMigration.swift; sourceTree = "<group>"; };
+		70CEF88320D629861CEDC48A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		758395FDB7838D950701CAE9 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		80DFA460A95EBFEE8F10B95B /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
 		87D82B19B8B61938B2618AAE /* ConditionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionsView.swift; sourceTree = "<group>"; };
@@ -130,6 +131,7 @@
 			isa = PBXGroup;
 			children = (
 				80DFA460A95EBFEE8F10B95B /* AppStore.swift */,
+				70CEF88320D629861CEDC48A /* Assets.xcassets */,
 				FA8D1416119ACEF8093016D5 /* ComparisonView.swift */,
 				87D82B19B8B61938B2618AAE /* ConditionsView.swift */,
 				FF30EFDD39D4C90A7B37618A /* DecisionEngine.swift */,
@@ -298,6 +300,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2BEC25F81FED5A2213016E64 /* Assets.xcassets in Resources */,
 				6CB55238845A8E91086C07BD /* listings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
