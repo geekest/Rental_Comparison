@@ -17,7 +17,7 @@ enum DecisionLegacyProjection {
                 facts: factsByOption[option.id] ?? [],
                 evidence: evidenceByOption[option.id] ?? [],
                 tasks: tasksByOption[option.id] ?? [],
-                city: hunt.city,
+                city: text(from: factsByOption[option.id]?.first(where: { $0.key == FactKey.city })?.value) ?? hunt.city,
                 currency: hunt.defaultCurrency,
                 criteria: criteria
             )
@@ -68,7 +68,7 @@ enum DecisionLegacyProjection {
         return .init(
             id: option.id,
             name: option.displayName,
-            city: city,
+            city: text(from: firstValue(for: FactKey.city)) ?? city,
             rentalType: rentalType(from: firstValue(for: FactKey.rentalType)),
             rent: decimal(from: firstValue(for: FactKey.monthlyRent)) ?? 0,
             currency: currency,

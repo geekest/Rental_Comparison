@@ -25,6 +25,8 @@ final class RentalComparisonUITests: XCTestCase {
 
     func testQuickCaptureAllowsNameWithoutRent() {
         app.buttons["addListingButton"].tap()
+        XCTAssertTrue(app.buttons["directListingButton"].waitForExistence(timeout: 3))
+        app.buttons["directListingButton"].tap()
         XCTAssertTrue(app.textFields["listingNameField"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.textFields["listingRentField"].exists)
         XCTAssertTrue(app.buttons["saveListingButton"].exists)
@@ -32,6 +34,14 @@ final class RentalComparisonUITests: XCTestCase {
         app.textFields["listingNameField"].typeText("Quick candidate")
         app.buttons["saveListingButton"].tap()
         XCTAssertTrue(app.navigationBars["快速添加候选"].waitForNonExistence(timeout: 5))
+    }
+
+    func testAddListingMenuShowsThreeImportMethods() {
+        app.buttons["addListingButton"].tap()
+
+        XCTAssertTrue(app.buttons["directListingButton"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["linkImportButton"].exists)
+        XCTAssertTrue(app.buttons["screenshotImportButton"].exists)
     }
 
     func testListingCardCanJoinComparisonAndOpenDetails() {

@@ -260,6 +260,7 @@ struct DecisionWorkspace: Codable, Hashable {
 }
 
 enum FactKey {
+    static let city = "city"
     static let monthlyRent = "monthly_rent"
     static let rentalType = "rental_type"
     static let address = "address"

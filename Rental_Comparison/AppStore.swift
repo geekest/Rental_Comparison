@@ -10,10 +10,12 @@ final class AppStore {
     private var taskStates: [DecisionAppState]
     private var currentTaskID: UUID
     private(set) var preferences: DecisionPreferences
+    private(set) var pendingImportURL: URL?
 
     init(persistence: DecisionPersistenceClient = .live, useFixtures: Bool = ProcessInfo.processInfo.arguments.contains("-uiTesting")) {
         self.persistence = persistence
         saveError = nil
+        pendingImportURL = nil
         var initialState: DecisionAppState
         var loadedStates: [DecisionAppState] = []
         var selectedTaskID: UUID?
@@ -59,6 +61,14 @@ final class AppStore {
     func acceptPrivacy() {
         state.privacyAcknowledged = true
         persist()
+    }
+
+    func receiveSharedURL(_ url: URL) {
+        pendingImportURL = url
+    }
+
+    func clearPendingImportURL() {
+        pendingImportURL = nil
     }
 
     func createTask(title: String, city: String, destination: String, expectedMonths: Int) {
@@ -173,6 +183,61 @@ final class AppStore {
         state.hunt.optionIDs.append(optionID)
         state.hunt.updatedAt = now
         state.events.append(.init(id: UUID(), type: .captured, optionID: optionID, at: now, reason: nil))
+        refreshDecisionSupport(now: now)
+        persist()
+        return optionID
+    }
+
+    @discardableResult
+    func captureImportedOption(draft: ListingImportDraft) -> UUID {
+        let now = Date.now
+        let optionID = UUID()
+        let sourceURL = draft.sourceURL?.absoluteString
+        var evidence: [Evidence] = []
+        if let sourceURL {
+            evidence.append(.init(
+                id: UUID(), optionID: optionID, type: .listing, mediaID: nil,
+                bundledAssetName: nil, text: draft.sourceDescription.nilIfBlank,
+                sourceURL: sourceURL, capturedAt: now
+            ))
+        }
+        evidence += draft.photoIDs.map {
+            .init(
+                id: UUID(), optionID: optionID,
+                type: draft.sourceURL == nil ? .screenshot : .photo,
+                mediaID: $0, bundledAssetName: nil, text: nil,
+                sourceURL: sourceURL, capturedAt: now
+            )
+        }
+        let evidenceIDs = evidence.map(\.id)
+        var facts: [Fact] = []
+        func append(_ key: String, _ value: FactValue) {
+            facts.append(.init(
+                id: UUID(), optionID: optionID, key: key, value: value,
+                sourceType: draft.sourceType, sourceRef: sourceURL,
+                verificationState: .userConfirmed, evidenceIDs: evidenceIDs,
+                capturedAt: now, updatedAt: now
+            ))
+        }
+        if let city = draft.city.nilIfBlank { append(FactKey.city, .text(city)) }
+        if let monthlyRent = draft.monthlyRent, monthlyRent > 0 { append(FactKey.monthlyRent, .decimal(monthlyRent)) }
+        append(FactKey.rentalType, .text(draft.rentalType.rawValue))
+        if let address = draft.address?.nilIfBlank { append(FactKey.address, .text(address)) }
+        if let area = draft.area { append(FactKey.area, .decimal(area)) }
+        if let layout = draft.layout?.nilIfBlank { append(FactKey.layout, .text(layout)) }
+        if let roomCount = draft.roomCount { append(FactKey.bedroomCount, .decimal(Double(roomCount))) }
+        let option = Option(
+            id: optionID, huntID: state.hunt.id, displayName: draft.name.trimmingCharacters(in: .whitespacesAndNewlines),
+            searchStage: .saved, decisionState: .candidate, isFocused: false, eliminationReason: nil,
+            sourceRefs: sourceURL.map { [$0] } ?? [], factIDs: facts.map(\.id), evidenceIDs: evidenceIDs,
+            verificationTaskIDs: [], createdAt: now, updatedAt: now
+        )
+        state.options.append(option)
+        state.facts.append(contentsOf: facts)
+        state.evidence.append(contentsOf: evidence)
+        state.hunt.optionIDs.append(optionID)
+        state.hunt.updatedAt = now
+        state.events.append(.init(id: UUID(), type: .captured, optionID: optionID, at: now, reason: draft.provider?.title))
         refreshDecisionSupport(now: now)
         persist()
         return optionID

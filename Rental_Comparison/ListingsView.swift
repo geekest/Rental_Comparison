@@ -4,7 +4,7 @@ struct ListingsView: View {
     @Environment(AppStore.self) private var store
     @Binding var showingTaskSettings: Bool
     let onSelectTab: (AppTab) -> Void
-    @State private var showingAdd = false
+    @State private var showingAddFlow = false
     @State private var limitMessage: String?
     @State private var selectedListingID: UUID?
 
@@ -32,7 +32,7 @@ struct ListingsView: View {
                 NextActionCard(action: NextActionEngine.nextAction(in: store.state)) { destination in
                     switch destination {
                     case .capture:
-                        showingAdd = true
+                        showingAddFlow = true
                     case .compare, .finalDecision:
                         onSelectTab(.comparison)
                     case .verify:
@@ -116,14 +116,14 @@ struct ListingsView: View {
                     .labelStyle(.iconOnly)
             }
             ToolbarItem(placement: .primaryAction) {
-                Button { showingAdd = true } label: {
+                Button { showingAddFlow = true } label: {
                     WarmToolbarIcon(systemImage: "plus")
                 }
                     .accessibilityLabel("添加候选")
                     .accessibilityIdentifier("addListingButton")
             }
         }
-        .sheet(isPresented: $showingAdd) { QuickCaptureView() }
+        .sheet(isPresented: $showingAddFlow) { AddListingFlowView() }
         .alert("暂时无法加入对比", isPresented: Binding(
             get: { limitMessage != nil },
             set: { if !$0 { limitMessage = nil } }

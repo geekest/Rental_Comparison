@@ -67,6 +67,14 @@ struct RootView: View {
         .sheet(isPresented: $showingTaskSettings) {
             TaskSettingsView()
         }
+        .sheet(isPresented: Binding(
+            get: { store.pendingImportURL != nil },
+            set: { if !$0 { store.clearPendingImportURL() } }
+        )) {
+            if let url = store.pendingImportURL {
+                ListingLinkImportView(initialURL: url)
+            }
+        }
         .alert("无法保存", isPresented: Binding(
             get: { store.saveError != nil },
             set: { if !$0 { store.clearSaveError() } }

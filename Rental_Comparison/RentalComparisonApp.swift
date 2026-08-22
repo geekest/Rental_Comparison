@@ -9,6 +9,11 @@ struct RentalComparisonApp: App {
             RootView()
                 .environment(store)
                 .tint(.blue)
+                .onOpenURL { url in
+                    if let sharedURL = ImportURLRouter.sharedURL(from: url) {
+                        store.receiveSharedURL(sharedURL)
+                    }
+                }
         }
     }
 }

@@ -99,4 +99,4 @@ Hunt 保存默认 ISO 4217 货币；界面使用系统 Locale。不同货币禁�
 
 ## 非目标
 
-房源搜索、供给聚合、自动申请、签约、支付、登录、云同步、综合评分、自动赢家、远程 AI、Share Extension、URL 解析、地图自动通勤、多人协作、Android 和 iPad 专门布局不在本轮 P0。
+房源搜索、供给聚合、自动申请、签约、支付、登录、云同步、综合评分、自动赢家、远程 AI、任意 URL 解析、地图自动通勤、多人协作、Android 和 iPad 专门布局不在本轮 P0。原生 iOS 本轮新增的 Share Extension 与链家、贝壳、Reddit 首批链接适配器，以 [房源多入口导入规格](spec_003_listing_import.md) 为准。
