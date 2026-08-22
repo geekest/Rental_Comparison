@@ -4,6 +4,7 @@ struct ComparisonView: View {
     @Environment(AppStore.self) private var store
     @State private var showingManager = false
     @State private var showingFinal = false
+    @State private var showingFullMatrix = false
 
     private var listings: [Listing] { store.comparisonListings }
 
@@ -23,7 +24,17 @@ struct ComparisonView: View {
                     LazyVStack(alignment: .leading, spacing: 28) {
                         ComparisonHeader(listings: listings)
 
-                        ComparisonSection(title: "真实成本", subtitle: "月租与固定费用的月均支出", symbol: "wallet.pass") { listing in
+                        DifferenceFirstSummary(listings: listings)
+
+                        Button(showingFullMatrix ? "收起完整对比" : "查看完整对比") {
+                            withAnimation { showingFullMatrix.toggle() }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .buttonStyle(.bordered)
+                        .padding(.horizontal)
+
+                        if showingFullMatrix {
+                            ComparisonSection(title: "真实成本", subtitle: "月租与固定费用的月均支出", symbol: "wallet.pass") { listing in
                             let summary = DecisionEngine.calculateCosts(for: listing, expectedMonths: store.task.expectedMonths)
                             VStack(alignment: .leading, spacing: 8) {
                                 MetricValue(summary.monthlyHousing.formattedMoney(currency: listing.currency), caption: "月均居住成本")
@@ -32,17 +43,17 @@ struct ComparisonView: View {
                                     StatusPill(text: "\(summary.unknowns.count) 项费用未知", systemImage: "questionmark.circle", color: .orange)
                                 }
                             }
-                        }
+                            }
 
-                        ComparisonSection(title: "通勤时间", subtitle: "前往 \(store.task.commuteDestination.isEmpty ? "主要目的地" : store.task.commuteDestination) 的单程记录", symbol: "clock") { listing in
+                            ComparisonSection(title: "通勤时间", subtitle: "前往 \(store.task.commuteDestination.isEmpty ? "主要目的地" : store.task.commuteDestination) 的单程记录", symbol: "clock") { listing in
                             VStack(alignment: .leading, spacing: 8) {
                                 MetricValue(listing.commuteMinutes.map { "\($0) 分钟" } ?? "待补充", caption: listing.commuteMode?.title ?? "方式待补充")
                                 Text(listing.commuteFare.map { "\($0.formattedMoney(currency: listing.currency)) / 次" } ?? "通勤支出待补充")
                                     .foregroundStyle(.secondary)
                             }
-                        }
+                            }
 
-                        ComparisonSection(title: "条件风险", subtitle: "硬性冲突、未知项与普通偏好", symbol: "checklist") { listing in
+                            ComparisonSection(title: "条件风险", subtitle: "硬性冲突、未知项与普通偏好", symbol: "checklist") { listing in
                             VStack(alignment: .leading, spacing: 8) {
                                 let conflicts = DecisionEngine.requiredConflicts(in: store.task, listing: listing)
                                 if conflicts.isEmpty {
@@ -57,9 +68,9 @@ struct ComparisonView: View {
                                     }
                                 }
                             }
-                        }
+                            }
 
-                        ComparisonSection(title: "看房记录", subtitle: "已记录的现场异常", symbol: "eye") { listing in
+                            ComparisonSection(title: "看房记录", subtitle: "已记录的现场异常", symbol: "eye") { listing in
                             let issues = DecisionEngine.inspectionIssues(in: listing)
                             VStack(alignment: .leading, spacing: 8) {
                                 if issues.isEmpty {
@@ -74,6 +85,7 @@ struct ComparisonView: View {
                                         }
                                     }
                                 }
+                            }
                             }
                         }
 
@@ -136,6 +148,103 @@ private struct ComparisonHeader: View {
         }
         .contentMargins(.horizontal, 20, for: .scrollContent)
         .scrollIndicators(.hidden)
+    }
+}
+
+private struct DifferenceFirstSummary: View {
+    @Environment(AppStore.self) private var store
+    let listings: [Listing]
+
+    private var monthlyRentRange: ClosedRange<Double>? {
+        guard !hasMixedCurrencies else { return nil }
+        let values = listings.map(\.rent).filter { $0 > 0 }
+        guard let minimum = values.min(), let maximum = values.max(), minimum != maximum else { return nil }
+        return minimum...maximum
+    }
+
+    private var commuteRange: ClosedRange<Int>? {
+        let values = listings.compactMap(\.commuteMinutes)
+        guard let minimum = values.min(), let maximum = values.max(), minimum != maximum else { return nil }
+        return minimum...maximum
+    }
+
+    private var hasMixedCurrencies: Bool {
+        Set(listings.map { $0.currency.uppercased() }).count > 1
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            differenceSection("硬性冲突", symbol: "exclamationmark.octagon") {
+                let conflicts = listings.flatMap { listing in
+                    DecisionEngine.requiredConflicts(in: store.task, listing: listing).map { (listing, $0) }
+                }
+                if conflicts.isEmpty {
+                    Label("当前没有已知硬性冲突", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                } else {
+                    ForEach(Array(conflicts.enumerated()), id: \.offset) { _, item in
+                        let listing = item.0
+                        let condition = item.1
+                        Label("\(listing.name)：\(condition.name)", systemImage: "xmark.octagon.fill")
+                            .foregroundStyle(.red)
+                    }
+                }
+            }
+
+            differenceSection("主要差异", symbol: "arrow.left.arrow.right") {
+                if hasMixedCurrencies {
+                    Label("候选使用不同货币，未进行汇率换算", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                }
+                if let monthlyRentRange {
+                    Label("月租相差 \((monthlyRentRange.upperBound - monthlyRentRange.lowerBound).formattedMoney(currency: store.task.currency))", systemImage: "yensign.circle")
+                }
+                if let commuteRange {
+                    Label("单程通勤相差 \(commuteRange.upperBound - commuteRange.lowerBound) 分钟", systemImage: "clock")
+                }
+                if monthlyRentRange == nil && commuteRange == nil {
+                    Text("还没有足够的统一口径数据来突出差异。")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            differenceSection("决策阻塞项", symbol: "questionmark.circle") {
+                let blockers = store.state.unknowns.filter { unknown in
+                    unknown.status == .open && unknown.impactLevel == .high && listings.contains { $0.id == unknown.optionID }
+                }
+                if blockers.isEmpty {
+                    Label("当前没有高影响待确认项", systemImage: "checkmark.circle")
+                        .foregroundStyle(.green)
+                } else {
+                    ForEach(blockers) { blocker in
+                        let optionName = store.state.options.first { $0.id == blocker.optionID }?.displayName ?? "候选"
+                        Text("\(optionName)：\(blocker.reason)")
+                    }
+                }
+            }
+
+            differenceSection("已知取舍", symbol: "scale.3d") {
+                if let cheapest = listings.filter({ $0.rent > 0 }).min(by: { $0.rent < $1.rent }),
+                   let fastest = listings.compactMap({ listing in listing.commuteMinutes.map { (listing, $0) } }).min(by: { $0.1 < $1.1 }) {
+                    Text("\(cheapest.name) 的月租最低；\(fastest.0.name) 的通勤最快。系统不会自动替你选择。")
+                } else {
+                    Text("补充月租和通勤后，这里会说明已知取舍。")
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(.horizontal)
+    }
+
+    private func differenceSection<Content: View>(_ title: String, symbol: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(title, systemImage: symbol).font(.title3.bold())
+            content()
+                .font(.subheadline)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(.background.secondary, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
 
@@ -238,13 +347,53 @@ private struct FinalDecisionView: View {
                     TextField("选择理由（可选）", text: $reason, axis: .vertical)
                         .lineLimit(2...5)
                 }
-                if let selected {
-                    let costs = DecisionEngine.calculateCosts(for: selected, expectedMonths: store.task.expectedMonths)
-                    Section("确认前检查") {
-                        LabeledContent("未知费用", value: costs.unknowns.isEmpty ? "无" : "\(costs.unknowns.count) 项")
-                        LabeledContent("硬性风险", value: "\(DecisionEngine.requiredConflicts(in: store.task, listing: selected).count) 项")
-                        LabeledContent("看房异常", value: "\(DecisionEngine.inspectionIssues(in: selected).count) 项")
-                        Toggle("我已知晓仍未解决的项目", isOn: $acknowledged)
+                if selected != nil {
+                    Section("Decision Readiness") {
+                        LabeledContent("当前状态", value: readinessTitle)
+                    }
+                    Section("已知取舍") {
+                        ForEach(tradeOffLines, id: \.self) { line in
+                            Text(line)
+                        }
+                    }
+                    if !blockers.isEmpty {
+                        Section("未解决阻塞项") {
+                            ForEach(blockers) { blocker in
+                                Label(blocker.reason, systemImage: "exclamationmark.circle.fill")
+                                    .foregroundStyle(.orange)
+                            }
+                        }
+                    }
+                    if !knownRisks.isEmpty {
+                        Section("已知风险") {
+                            ForEach(knownRisks) { task in
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Label(task.title, systemImage: "exclamationmark.triangle.fill")
+                                        .foregroundStyle(.orange)
+                                    if let result = task.result, !result.isEmpty {
+                                        Text(result).font(.caption).foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Section("证据覆盖") {
+                        if evidenceFacts.isEmpty {
+                            Text("尚无已确认事实；请先补充决定性信息。")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            ForEach(evidenceFacts) { fact in
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(factTitle(for: fact)).font(.subheadline.weight(.semibold))
+                                    Text("\(factSourceTitle(fact.sourceType)) · \(verificationTitle(fact.verificationState))")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
+                    Section("确认") {
+                        Toggle(blockers.isEmpty ? "我已知晓本次取舍与风险" : "我确认继续处理未解决信息", isOn: $acknowledged)
                     }
                 }
             }
@@ -262,6 +411,93 @@ private struct FinalDecisionView: View {
                     .accessibilityIdentifier("finalConfirmButton")
                 }
             }
+        }
+    }
+
+    private var blockers: [DecisionUnknown] {
+        guard let selectedID else { return [] }
+        return store.state.unknowns.filter { $0.optionID == selectedID && $0.status == .open && $0.impactLevel == .high }
+    }
+
+    private var knownRisks: [VerificationTask] {
+        guard let selectedID else { return [] }
+        return store.state.verificationTasks.filter { $0.optionID == selectedID && $0.state == .issue }
+    }
+
+    private var evidenceFacts: [Fact] {
+        guard let selectedID else { return [] }
+        return store.state.facts.filter {
+            $0.optionID == selectedID && ($0.verificationState == .userConfirmed || $0.verificationState == .observed)
+        }
+    }
+
+    private var readinessTitle: String {
+        guard let selectedID else { return "尚未选择" }
+        switch DecisionReadinessEngine.summary(for: selectedID, in: store.state).status {
+        case .notReady: return "尚未就绪"
+        case .needsVerification: return "仍需验证"
+        case .readyWithKnownRisks: return "带已知风险可决策"
+        case .ready: return "可决策"
+        }
+    }
+
+    private var tradeOffLines: [String] {
+        guard let selected else { return ["选择候选后展示取舍。"] }
+        let alternatives = store.candidateListings.filter { $0.id != selected.id }
+        guard let reference = alternatives.compactMap({ listing in
+            listing.commuteMinutes.map { (listing, $0) }
+        }).min(by: { $0.1 < $1.1 })?.0 ?? alternatives.filter({ $0.rent > 0 }).min(by: { $0.rent < $1.rent }) else {
+            return ["补充其他候选的月租或通勤后，会在这里展示取舍。"]
+        }
+
+        var lines: [String] = []
+        if selected.rent > 0, reference.rent > 0, selected.currency.uppercased() == reference.currency.uppercased() {
+            let difference = selected.rent - reference.rent
+            if difference == 0 {
+                lines.append("与 \(reference.name) 的月租相同。")
+            } else {
+                lines.append("相较 \(reference.name)，月租\(difference > 0 ? "高" : "低") \(abs(difference).formattedMoney(currency: selected.currency))。")
+            }
+        }
+        if let selectedCommute = selected.commuteMinutes, let referenceCommute = reference.commuteMinutes {
+            let difference = selectedCommute - referenceCommute
+            if difference == 0 {
+                lines.append("与 \(reference.name) 的单程通勤相同。")
+            } else {
+                lines.append("相较 \(reference.name)，单程通勤\(difference > 0 ? "多" : "少") \(abs(difference)) 分钟。")
+            }
+        }
+        return lines.isEmpty ? ["补充其他候选的月租或通勤后，会在这里展示取舍。"] : lines
+    }
+
+    private func factTitle(for fact: Fact) -> String {
+        switch fact.key {
+        case FactKey.monthlyRent: "月租"
+        case FactKey.commuteMinutes: "通勤时间"
+        case FactKey.noise: "噪音"
+        default: fact.key.replacingOccurrences(of: "user.", with: "")
+        }
+    }
+
+    private func factSourceTitle(_ source: FactSourceType) -> String {
+        switch source {
+        case .screenshot: "截图"
+        case .photo: "照片"
+        case .userObservation: "现场观察"
+        case .manual: "手动记录"
+        case .listing: "房源信息"
+        case .agentMessage: "中介消息"
+        case .agentVerbal: "口头承诺"
+        case .contract: "合同"
+        }
+    }
+
+    private func verificationTitle(_ state: FactVerificationState) -> String {
+        switch state {
+        case .unknown: "待确认"
+        case .extracted: "待核验"
+        case .userConfirmed: "已确认"
+        case .observed: "已现场观察"
         }
     }
 }

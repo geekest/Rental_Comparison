@@ -10,20 +10,66 @@ final class RentalComparisonUITests: XCTestCase {
         app.launch()
     }
 
-    func testMainTabsOpenCoreScreens() {
+    func testMainTabsOpenDecisionScreens() {
         XCTAssertTrue(app.staticTexts["上海租房计划"].waitForExistence(timeout: 8))
         app.tabBars.buttons["对比"].tap()
         XCTAssertTrue(app.navigationBars["比较房源"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["真实成本"].exists)
-        app.tabBars.buttons["条件"].tap()
-        XCTAssertTrue(app.navigationBars["条件"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["月均居住成本不超过 ¥9,500"].exists)
+        XCTAssertTrue(app.staticTexts["主要差异"].exists)
+        app.tabBars.buttons["待确认"].tap()
+        XCTAssertTrue(app.navigationBars["待确认"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["下一次需要确认"].exists)
     }
 
-    func testAddListingSheetHasRequiredFields() {
+    func testQuickCaptureAllowsNameWithoutRent() {
         app.buttons["addListingButton"].tap()
         XCTAssertTrue(app.textFields["listingNameField"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.textFields["listingRentField"].exists)
         XCTAssertTrue(app.buttons["saveListingButton"].exists)
+        app.textFields["listingNameField"].tap()
+        app.textFields["listingNameField"].typeText("Quick candidate")
+        app.buttons["saveListingButton"].tap()
+        XCTAssertTrue(app.navigationBars["快速添加候选"].waitForNonExistence(timeout: 5))
+    }
+
+    func testListingCardCanRemoveFromComparisonAndOpenDetails() {
+        let listingID = "11111111-1111-1111-1111-111111111111"
+        let comparisonButton = app.buttons["comparisonButton_\(listingID)"]
+
+        XCTAssertTrue(comparisonButton.waitForExistence(timeout: 5))
+        XCTAssertTrue(comparisonButton.isEnabled)
+
+        comparisonButton.tap()
+        XCTAssertEqual(comparisonButton.label, "加入对比")
+
+        comparisonButton.tap()
+        XCTAssertEqual(comparisonButton.label, "已加入对比")
+        XCTAssertTrue(app.staticTexts["待验证"].exists)
+
+        let card = app.otherElements["listingCard_\(listingID)"]
+        XCTAssertTrue(card.waitForExistence(timeout: 3))
+        card.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45)).tap()
+        XCTAssertTrue(app.navigationBars["徐汇 · 一室一厅"].waitForExistence(timeout: 5))
+    }
+
+    func testPlannedViewingOpensOptionSpecificVerificationMode() {
+        let listingID = "11111111-1111-1111-1111-111111111111"
+        let card = app.otherElements["listingCard_\(listingID)"]
+
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        app.buttons["listingDetailButton_\(listingID)"].tap()
+        XCTAssertTrue(app.navigationBars["徐汇 · 一室一厅"].waitForExistence(timeout: 5))
+        let scheduleButton = app.buttons["scheduleViewingButton"]
+        for _ in 0..<4 where !scheduleButton.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(scheduleButton.isHittable)
+
+        scheduleButton.tap()
+        let startButton = app.buttons["startViewingButton"]
+        XCTAssertTrue(startButton.waitForExistence(timeout: 5))
+        startButton.tap()
+
+        XCTAssertTrue(app.buttons["正常"].firstMatch.waitForExistence(timeout: 5))
+        app.buttons["正常"].firstMatch.tap()
     }
 }

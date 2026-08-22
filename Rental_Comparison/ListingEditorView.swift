@@ -25,8 +25,11 @@ struct ListingEditorView: View {
 
     private var canSave: Bool {
         !draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !draft.city.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        draft.rent > 0
+        !draft.city.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var areaUnit: String {
+        RegionalTemplateCatalog.template(id: store.state.hunt.regionTemplateID).areaUnit
     }
 
     var body: some View {
@@ -75,7 +78,7 @@ struct ListingEditorView: View {
 
                 Section("位置与空间") {
                     TextField("地址", text: optionalStringBinding(\Listing.address))
-                    TextField("面积（㎡）", value: $draft.area, format: .number)
+                    TextField("面积（\(areaUnit)）", value: $draft.area, format: .number)
                         .keyboardType(.decimalPad)
                     Picker("面积范围", selection: optionalStringBinding(\Listing.areaScope, fallback: "整套")) {
                         Text("整套").tag("整套")
@@ -124,7 +127,7 @@ struct ListingEditorView: View {
                     }
                 }
             }
-            .navigationTitle(isNew ? "添加租赁方案" : "编辑房源")
+            .navigationTitle(isNew ? "添加租赁方案" : "完整信息")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }

@@ -1,6 +1,10 @@
 import Foundation
 
 enum ReportBuilder {
+    static func html(for state: DecisionAppState) -> String {
+        html(for: DecisionLegacyProjection.appState(from: state))
+    }
+
     static func html(for state: AppState) -> String {
         let task = state.task
         let finalName = task.listings.first { $0.id == task.finalListingID }?.name ?? "尚未确认"
@@ -33,6 +37,13 @@ enum ReportBuilder {
 
     static func writeTemporaryReport(for state: AppState) throws -> URL {
         let safeTitle = state.task.title.replacingOccurrences(of: "/", with: "-")
+        let url = FileManager.default.temporaryDirectory.appending(path: "\(safeTitle)-决策报告.html")
+        try html(for: state).write(to: url, atomically: true, encoding: .utf8)
+        return url
+    }
+
+    static func writeTemporaryReport(for state: DecisionAppState) throws -> URL {
+        let safeTitle = state.hunt.title.replacingOccurrences(of: "/", with: "-")
         let url = FileManager.default.temporaryDirectory.appending(path: "\(safeTitle)-决策报告.html")
         try html(for: state).write(to: url, atomically: true, encoding: .utf8)
         return url

@@ -1,7 +1,7 @@
 # 租房对比开发看板
 
-> 最后盘点：2026-08-13
-> 当前基线：`34b7eb9`（`main`）
+> 最后盘点：2026-08-20
+> 当前基线：`d0b4731`（`codex/ios-card-layout`）
 > 用途：这是产品开发看板，不替代 `docs/specs/` 中已确认的功能规格。每次开始或完成一个需求时，更新对应任务的状态、验收证据和关联文档。
 
 ## 使用约定
@@ -38,10 +38,48 @@
 - [x] 支持条件重要性、看房清单与异常照片、重点考虑、淘汰/恢复、唯一最终房源及撤回选择。
 - [x] 支持不含原始图片的决策报告和匿名测试摘要导出。
 - [x] 已具备单元测试、Playwright 核心流程测试、移动运行时检查、构建和静态托管检查。
+- [x] 修复原生 iOS 房源卡片交互与布局（2026-08-17）
+  - 改动：已加入对比可再次点击撤销；点击卡片非操作区进入详情；图片固定在 16:9 容器内以 fill 裁切；楼层统一展示为“X 楼”。
+  - 文件：`Rental_Comparison/ListingsView.swift`、`Rental_Comparison/ListingImageView.swift`、`Rental_ComparisonUITests/RentalComparisonUITests.swift`。
+  - 验证：iPhone 16e 模拟器执行 7 个单元测试和 3 个 UI 测试均通过；以用户新增的 4288×2848 照片检查固定裁切、楼层和操作按钮。
+- [x] 重构原生 iOS 房源首页亲和视觉（2026-08-20）
+  - 改动：参考多抓鱼的温暖留白、低饱和色彩与轻分组气质，新增米白/墨色/苔绿视觉 token，重构任务头部、下一步、候选房源卡片与 3 Tab 导航；未复制其品牌、插画或图标。
+  - 文件：`Rental_Comparison/WarmDesign.swift`、`Rental_Comparison/ListingsView.swift`、`Rental_Comparison/RootView.swift`、`Rental_Comparison.xcodeproj/project.pbxproj`、`design-qa.md`。
+  - 验证：iPhone 16e Simulator 完整测试 40 项通过；视觉 QA 已通过，截图存于 `/Users/geekest/Codex/2026-08-20/rental-warm-style/outputs/`。
 
 ## 待确认
 
 - [ ]
+
+## 进行中
+
+### Rental Decision System iOS 重构
+
+- 状态：Phase 10 已完成基础真机安装与启动验证；仍缺少人工交互验收。
+- 目标：将原生 iOS 从房源字段整理流程迁移为围绕事实、证据、未知项、验证任务和 Decision Readiness 的决策系统。
+- 范围：P0 仅覆盖 v1 → v2 本地迁移、选房/对比/待确认导航、Quick Capture、差异优先比较、最终确认和 China Regional Template；不包含服务器、AI、地图、Share Extension 与云同步。
+- 权威文档：`docs/specs/spec_002_decision_readiness_rebuild.md`、`docs/adr/0003_decision_model_v2_migration.md`、`.codex/plans/rental-decision-rebuild.md`。
+- 已完成：更新产品简述、范围、上下文、v2 规格与迁移 ADR；将 v1 SPEC 标记为历史兼容规格。
+- 已完成：新增 Hunt / Option / Fact / Evidence / Unknown / VerificationTask / Criterion / DecisionEvent v2 领域模型，以及独立的 `state-v2.json` 迁移与回退读取层。
+- 已完成：`AppStore` 已改为读取、保存 v2 状态，并通过兼容投影维持旧页面可运行；旧版照片、看房证据、城市、成本与历史事件均保留。
+- 已完成：主导航已改为“选房 / 对比 / 待确认”；首页展示当前任务、候选数、阻塞数与规则驱动的下一步行动；选房重点已移至任务设置。
+- 已完成：Quick Capture 支持仅凭名称或名称加图片保存候选；月租缺失保持未知；完整字段编辑已降级为详情页入口，关键事实展示来源和确认状态。
+- 已完成：Unknown Engine 识别缺失月租、未确认费用及未知硬性条件，并在候选详情页和首页阻塞数中显式呈现；已确认事实会自动关闭对应系统 Unknown。
+- 已完成：每个打开的 Unknown 自动生成询问或检查任务；验证结果支持现场照片和备注，并在验证完成后关闭关联 Unknown、记录事件和保留证据。
+- 已完成：计划看房会自动增加“夜间噪音”高影响现场观察；现场模式支持一键记录正常、问题或跳过，观察结果会回写 Fact 并保留文字/照片 Evidence。
+- 已完成：旧版完整表单保存改为合并 v2 决策上下文，避免丢失 Unknown、验证任务或现场观察事实。
+- 已完成：对比页默认展示硬性冲突、月租/通勤主要差异、决策阻塞项与已知取舍；完整矩阵改为按需展开。
+- 已完成：最终选择使用 Decision Readiness Gate，展示证据覆盖、已知取舍、未解决 blocker 和风险；确认/撤回直接操作 v2 状态，避免丢失验证记录。
+- 已完成：新增 China Mainland Regional Template 与 Manual Provider Adapter 接口；金额格式跟随系统 Locale；跨币种候选明确提示而不静默换算。
+- 已完成：兼容编辑页的面积单位从当前地区模板读取；金额格式要求调用方显式提供 ISO 货币代码，避免核心层隐式使用 CNY。
+- 已完成：最终确认页逐条展示已确认/现场观察事实的来源和状态，并同时呈现与参考候选的月租、通勤取舍及风险备注。
+- 已完成：Quick Capture 可明确将素材保存为截图或照片 Evidence；本地媒体可往返读写；A/B/C 最终验收场景已覆盖 Unknown、现场噪音、费用确认、硬性冲突、最终选择与撤回；Unknown Engine 也能按候选隔离并安全去重；完整 XCTest / XCUITest 在 iPhone 16e Simulator 通过，共 40 项。
+- 已完成：支持用户手动添加高影响 Unknown，并自动生成验证任务。
+- 已完成：真实 iPhone 17（iOS 26.6.1）使用临时 Team 签名构建、安装并成功前台启动；工程文件未写入签名配置。
+- 已确认限制：真机 XCTest 已通过 31 项；XCUITest Runner 已完成签名但无法安装，因为免费开发者账号在该 iPhone 上的 3 个可安装 App 名额已用尽。未删除设备上的其他 App，也未改写工程签名配置。
+- 下一步：在真实 iPhone 手工完成“快速捕获 → 验证 → 对比 → 最终选择”交互验收；当前仅证明真机可安装、启动并保持运行。
+- 验证证据：iPhone 16e Simulator 完整 `xcodebuild test` 通过，共 40 项，含计划指定 A/B/C 决策场景、重复 Unknown、本地媒体和 Locale 兼容回归；iPhone 17 已重新构建并成功安装最新包，真机 XCTest 通过 31 项。本次启动因设备锁屏被系统拒绝；此前包已启动并保持运行。覆盖范围与限制已分别记录。
+- 视觉证据：使用 `simctl screenshot` 检查 iPhone 16e Simulator 当前画面，确认 Hunt 首页、决策阻塞卡片、16:9 房源图片、并列操作按钮和“选房 / 对比 / 待确认”导航均实际渲染。
 
 ## 待办
 
@@ -109,6 +147,9 @@
 - 当前仅验证中国大陆模板、`CNY` 和平方米；跨地区、跨货币不在当前可用范围内。
 - 本地浏览器数据被清理或更换设备后可能丢失；目前没有账户、云同步或业务服务器恢复能力。
 - 真实 iPhone Safari 尚未完成验收；已有浏览器自动化通过不等于真机通过。
+- 2026-08-19 追加证据：iPhone 17 解锁后，当前 Debug 包可通过 `devicectl` 成功启动；仍缺少人工逐项触控验收，因此 Phase 10 保持进行中。
+- 2026-08-19 修复房源卡片图片容器：移除 `GeometryReader` 的未约束高度，统一使用 16:9 容器和 `scaledToFill` 裁切；iPhone 16e Simulator 单元 36 项、UI 4 项全部通过。
+- 2026-08-19 真机复核：卡片布局修复包已重新构建、安装并在 iPhone 17 启动成功；仍缺少人工逐项触控验收。
 - 完整移动运行时套件仍有 2 个 Chrome 专用手势用例失败，不能标记为全绿。
 
 ## 本轮盘点记录

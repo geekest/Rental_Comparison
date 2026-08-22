@@ -1,11 +1,13 @@
-# SPEC-001：选房决策核心流程
+# SPEC-001：选房决策核心流程（v1 历史规格）
 
 ## 文档状态
 
-- 状态：已确认
-- 最近更新：2026-08-14
+- 状态：已归档；仅用于 v1 Web MVP 与已发布 iOS 首版兼容
+- 最近更新：2026-08-19
 - 关联范围：[MVP 范围](../product/mvp_scope.md)
 - 适用阶段：手机 Web 验证原型与原生 iOS 首版
+
+> v2 iOS 重构的权威行为、术语、迁移与验收已迁移至 [SPEC-002](spec_002_decision_readiness_rebuild.md)。本文件不再扩展新功能，避免将 `RentalTask / Listing` 与 `Hunt / Option` 混作同一长期模型。
 
 ## 背景
 

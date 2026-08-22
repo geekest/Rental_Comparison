@@ -3,11 +3,19 @@
 ## 文档状态
 
 - 状态：已确认
-- 最近更新：2026-08-09
+- 最近更新：2026-08-19
 - 依据：[产品简述](product_brief.md)
-- 当前交付：手机 Web MVP 已实现；完整度与剩余差距见[核心流程规格](../specs/spec_001_core_flow.md#当前-web-实现状态)
+- 当前交付：Web MVP 已冻结为历史验证版本；原生 iOS 的 v2 P0 范围以 [Decision Readiness 重构规格](../specs/spec_002_decision_readiness_rebuild.md) 为准
 
-## MVP 目标
+## v2 P0 目标
+
+验证已有多个候选的租房者，能否通过 Facts、Evidence、Unknown 与 VerificationTask 更快建立足以知情决策的证据，而非维护一份完整租房字段表。
+
+本轮包括：低摩擦 Quick Capture、v1 → v2 本地迁移、事实来源与确认状态、Difference-first Compare、高影响 Unknown、VerificationTask、Decision Readiness、可解释最终确认，以及 Universal Core 与 China Regional Template。
+
+本轮不包括：房源搜索、供给聚合、账户、云同步、支付、综合评分、自动赢家、远程 AI、Share Extension、URL Provider Adapter、地图自动通勤、多人协作、Android 或 iPad 专门布局。
+
+## 历史 Web MVP 目标
 
 验证中国大陆城市长租用户是否愿意录入多个真实租赁方案，并通过统一的成本、通勤、条件和看房证据完成一次可说明的候选判断变化。
 
