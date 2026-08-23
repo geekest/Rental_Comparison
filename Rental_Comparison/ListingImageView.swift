@@ -17,7 +17,6 @@ struct ListingImageView: View {
             }
         }
         .scaledToFill()
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipped()
         .accessibilityLabel("\(listing.name)的房源照片")
     }

@@ -199,17 +199,7 @@ private struct ListingCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            ZStack(alignment: .topTrailing) {
-                ListingImageView(listing: listing)
-                if listing.focused {
-                    StatusPill(text: "重点考虑", systemImage: "star.fill", color: WarmDesign.warning)
-                        .padding(12)
-                }
-            }
-            // 先锁定容器比例，再让图片 fill 并裁切，避免异常比例的原图撑高卡片。
-            .frame(maxWidth: .infinity)
-            .aspectRatio(16.0 / 9.0, contentMode: .fit)
-            .clipped()
+            ListingCardCover(listing: listing)
             VStack(alignment: .leading, spacing: 12) {
                 Text(listing.name)
                     .font(.system(.title2, design: .serif, weight: .bold))
@@ -317,6 +307,27 @@ private struct ListingCard: View {
             .joined(separator: " · ")
     }
 
+}
+
+private struct ListingCardCover: View {
+    let listing: Listing
+
+    var body: some View {
+        // 由卡片先确定 16:9 图幅，再把原图按 fill 方式放入并裁切。
+        // 这样竖向截图不会依据自身尺寸撑高卡片，也不会覆盖卡片正文。
+        GeometryReader { proxy in
+            ZStack(alignment: .topTrailing) {
+                ListingImageView(listing: listing)
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                if listing.focused {
+                    StatusPill(text: "重点考虑", systemImage: "star.fill", color: WarmDesign.warning)
+                        .padding(12)
+                }
+            }
+        }
+        .aspectRatio(16.0 / 9.0, contentMode: .fit)
+        .clipped()
+    }
 }
 
 #Preview("选房") {
