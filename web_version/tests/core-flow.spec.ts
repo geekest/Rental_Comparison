@@ -27,6 +27,50 @@ test("候选、比较、最终确认与撤回形成闭环", async ({ page }) => 
   await expect(page.getByTestId("compare-screen")).toBeVisible();
 });
 
+test("对比页横向滑动时整列房源信息保持同步", async ({ page }) => {
+  await page.getByTestId("listing-card-putuo").getByRole("button", { name: "加入对比" }).click();
+  await page.locator(".bottom-nav button").nth(1).click();
+
+  const rails = page.locator(".compare-synced-carousel");
+  await expect(rails).toHaveCount(6);
+  const source = rails.nth(1);
+  const bounds = await source.boundingBox();
+  if (!bounds) throw new Error("成本对比轨道未渲染");
+
+  const startX = bounds.x + bounds.width / 2;
+  const startY = bounds.y + bounds.height / 2;
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  for (let step = 1; step <= 8; step += 1) {
+    await page.mouse.move(startX - (120 * step) / 8, startY);
+    await page.waitForTimeout(8);
+  }
+  await page.mouse.up();
+
+  await expect
+    .poll(() => rails.evaluateAll((elements) => elements.map((element) => Math.round(element.scrollLeft))))
+    .toEqual([
+      expect.any(Number),
+      expect.any(Number),
+      expect.any(Number),
+      expect.any(Number),
+      expect.any(Number),
+      expect.any(Number),
+    ]);
+  await expect
+    .poll(() =>
+      rails.evaluateAll((elements) => {
+        const offsets = elements.map((element) => element.scrollLeft);
+        return Math.max(...offsets) - Math.min(...offsets);
+      }),
+    )
+    .toBeLessThanOrEqual(1);
+  await expect.poll(() => source.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
+  await expect
+    .poll(() => rails.evaluateAll((elements) => elements.every((element) => element.scrollLeft > 0)))
+    .toBe(true);
+});
+
 test("不用截图也允许用五字段手动保存", async ({ page }) => {
   await page.getByRole("button", { name: "添加房源" }).click();
   await page.getByPlaceholder("例如：徐汇 · 一室一厅").fill("测试房源");
