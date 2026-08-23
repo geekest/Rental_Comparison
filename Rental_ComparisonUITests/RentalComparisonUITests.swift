@@ -46,28 +46,55 @@ final class RentalComparisonUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.navigationBars["比较房源"].waitForExistence(timeout: 5))
-        app.buttons["comparisonAnalysisDisclosure"].tap()
-        app.buttons["对比详细数据"].tap()
+        let detailsDisclosure = app.buttons["comparisonDetailsDisclosure"]
+        XCTAssertTrue(detailsDisclosure.waitForExistence(timeout: 3))
+        detailsDisclosure.tap()
+        detailsDisclosure.tap()
 
-        let costScroll = app.scrollViews["comparisonSection-真实成本"]
+        let costValue = app.staticTexts["¥9,250"]
         let commuteMetric = app.descendants(matching: .any)
             .matching(identifier: "comparisonMetric-commute-22222222-2222-2222-2222-222222222222")
             .firstMatch
-        XCTAssertTrue(costScroll.waitForExistence(timeout: 3))
+        for _ in 0..<6 where !costValue.exists || !commuteMetric.exists {
+            app.swipeUp()
+        }
+        XCTAssertTrue(costValue.waitForExistence(timeout: 3))
         XCTAssertTrue(commuteMetric.waitForExistence(timeout: 3))
 
         let initialX = commuteMetric.frame.minX
-        for _ in 0..<3 where !costScroll.isHittable {
+        for _ in 0..<3 where !costValue.isHittable {
             app.swipeUp()
         }
-        XCTAssertTrue(costScroll.isHittable)
-        costScroll.swipeLeft()
+        XCTAssertTrue(costValue.isHittable)
+        let dragStart = costValue.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5))
+        let dragEnd = costValue.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5))
+        dragStart.press(forDuration: 0.1, thenDragTo: dragEnd, withVelocity: .fast, thenHoldForDuration: 0.1)
 
-        for _ in 0..<3 where !commuteMetric.exists {
+        for _ in 0..<3 where !commuteMetric.isHittable {
             app.swipeUp()
         }
         XCTAssertTrue(commuteMetric.waitForExistence(timeout: 3))
         XCTAssertLessThan(commuteMetric.frame.minX, initialX)
+    }
+
+    func testComparisonDetailsCanCollapseAndExpand() {
+        app.terminate()
+        app.launchArguments = ["-uiTesting", "-startComparison"]
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["比较房源"].waitForExistence(timeout: 5))
+        let disclosure = app.buttons["comparisonDetailsDisclosure"]
+        XCTAssertTrue(disclosure.waitForExistence(timeout: 3))
+        XCTAssertEqual(disclosure.value as? String, "已展开")
+
+        disclosure.tap()
+        XCTAssertEqual(disclosure.value as? String, "已收起")
+        let analysisDisclosure = app.buttons["comparisonAnalysisDisclosure"]
+        XCTAssertTrue(analysisDisclosure.waitForExistence(timeout: 3))
+        XCTAssertLessThan(disclosure.frame.minY, analysisDisclosure.frame.minY)
+
+        disclosure.tap()
+        XCTAssertEqual(disclosure.value as? String, "已展开")
     }
 
     func testComparisonHeaderStaysVisibleWhileScrolling() {
@@ -76,6 +103,7 @@ final class RentalComparisonUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.navigationBars["比较房源"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["比较房源"].staticTexts["比较房源"].exists)
         let header = app.staticTexts["comparisonHeader-11111111-1111-1111-1111-111111111111"]
         XCTAssertTrue(header.waitForExistence(timeout: 3))
         let initialHeaderFrame = header.frame
