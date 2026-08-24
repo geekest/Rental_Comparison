@@ -29,9 +29,12 @@ final class RentalComparisonUITests: XCTestCase {
         app.buttons["directListingButton"].tap()
         XCTAssertTrue(app.textFields["listingNameField"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.textFields["listingRentField"].exists)
+        let nameLabel = app.staticTexts["persistentFieldLabel_房源名称"]
+        XCTAssertTrue(nameLabel.exists)
         XCTAssertTrue(app.buttons["saveListingButton"].exists)
         app.textFields["listingNameField"].tap()
         app.textFields["listingNameField"].typeText("Quick candidate")
+        XCTAssertTrue(nameLabel.exists, "输入内容后字段标签仍应可见")
         app.buttons["saveListingButton"].tap()
         XCTAssertTrue(app.navigationBars["快速添加候选"].waitForNonExistence(timeout: 5))
     }

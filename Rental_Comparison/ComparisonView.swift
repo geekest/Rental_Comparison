@@ -344,8 +344,10 @@ private struct FinalDecisionView: View {
                         Text("请选择").tag(UUID?.none)
                         ForEach(store.candidateListings) { Text($0.name).tag(UUID?.some($0.id)) }
                     }
-                    TextField("选择理由（可选）", text: $reason, axis: .vertical)
-                        .lineLimit(2...5)
+                    PersistentFormField("选择理由（可选）") {
+                        TextField("例如：通勤更短且风险可接受", text: $reason, axis: .vertical)
+                            .lineLimit(2...5)
+                    }
                 }
                 if selected != nil {
                     Section("Decision Readiness") {

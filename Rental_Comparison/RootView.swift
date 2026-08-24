@@ -160,9 +160,15 @@ private struct TaskSettingsView: View {
                     }
                 }
                 Section("选房任务") {
-                    TextField("任务名称", text: $title)
-                    TextField("城市", text: $city)
-                    TextField("主要通勤目的地", text: $destination)
+                    PersistentFormField("任务名称") {
+                        TextField("例如：上海租房计划", text: $title)
+                    }
+                    PersistentFormField("城市") {
+                        TextField("例如：上海", text: $city)
+                    }
+                    PersistentFormField("主要通勤目的地") {
+                        TextField("例如：公司", text: $destination)
+                    }
                     Stepper("预计居住 \(expectedMonths) 个月", value: $expectedMonths, in: 1...60)
                 }
                 Section {

@@ -52,10 +52,12 @@ struct ListingLinkImportView: View {
                                 .foregroundStyle(.secondary)
                         }
                         Section("房源链接") {
-                            TextField("粘贴链接", text: $urlText, axis: .vertical)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .accessibilityIdentifier("listingURLField")
+                            PersistentFormField("链接") {
+                                TextField("粘贴房源详情链接", text: $urlText, axis: .vertical)
+                                    .textInputAutocapitalization(.never)
+                                    .autocorrectionDisabled()
+                                    .accessibilityIdentifier("listingURLField")
+                            }
                             if isLoading { ProgressView("正在解析页面") }
                             Button("开始解析", systemImage: "wand.and.stars") { Task { await importURL() } }
                                 .disabled(isLoading || urlText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -178,21 +180,35 @@ struct ListingImportReviewView: View {
                     if !draft.extractionNote.isEmpty { Text(draft.extractionNote).font(.caption).foregroundStyle(.secondary) }
                 }
                 Section("可确认信息") {
-                    TextField("房源名称", text: $draft.name)
-                        .accessibilityIdentifier("importedListingNameField")
-                    TextField("城市", text: $draft.city)
+                    PersistentFormField("房源名称") {
+                        TextField("例如：龙湖时代天街 01 卧", text: $draft.name)
+                            .accessibilityIdentifier("importedListingNameField")
+                    }
+                    PersistentFormField("城市") {
+                        TextField("例如：上海", text: $draft.city)
+                    }
                     Picker("租赁方式", selection: $draft.rentalType) {
                         ForEach(RentalType.allCases) { Text($0.title).tag($0) }
                     }
-                    TextField("月租（可选）", value: $draft.monthlyRent, format: .number)
-                        .keyboardType(.decimalPad)
-                        .accessibilityIdentifier("importedListingRentField")
-                    TextField("货币", text: $draft.currency)
-                        .textInputAutocapitalization(.characters)
-                    TextField("地址（可选）", text: optionalStringBinding(\.address))
-                    TextField("面积（可选）", value: $draft.area, format: .number)
-                        .keyboardType(.decimalPad)
-                    TextField("户型（可选）", text: optionalStringBinding(\.layout))
+                    PersistentFormField("月租（可选）") {
+                        TextField("例如：3330", value: $draft.monthlyRent, format: .number)
+                            .keyboardType(.decimalPad)
+                            .accessibilityIdentifier("importedListingRentField")
+                    }
+                    PersistentFormField("货币") {
+                        TextField("例如：CNY", text: $draft.currency)
+                            .textInputAutocapitalization(.characters)
+                    }
+                    PersistentFormField("地址（可选）") {
+                        TextField("例如：徐汇区龙华路 1 号", text: optionalStringBinding(\.address))
+                    }
+                    PersistentFormField("面积（可选）") {
+                        TextField("例如：37.13", value: $draft.area, format: .number)
+                            .keyboardType(.decimalPad)
+                    }
+                    PersistentFormField("户型（可选）") {
+                        TextField("例如：3 室 2 厅", text: optionalStringBinding(\.layout))
+                    }
                 }
                 Section("导入证据") {
                     if let provider = draft.provider { LabeledContent("来源平台", value: provider.title) }

@@ -30,8 +30,10 @@ struct VerificationTaskDetailView: View {
                             Text("发现风险").tag(VerificationTaskState.issue)
                             Text("暂不处理").tag(VerificationTaskState.skipped)
                         }
-                        TextField("记录观察结果（可选）", text: $result, axis: .vertical)
-                            .lineLimit(2...5)
+                        PersistentFormField("观察结果（可选）") {
+                            TextField("例如：夜间关窗后仍能听见车流声", text: $result, axis: .vertical)
+                                .lineLimit(2...5)
+                        }
                         PhotosPicker(selection: $selectedPhotos, maxSelectionCount: 3, matching: .images) {
                             Label(photoIDs.isEmpty ? "添加现场证据" : "已添加 \(photoIDs.count) 张", systemImage: "camera")
                         }

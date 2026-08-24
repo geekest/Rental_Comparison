@@ -36,17 +36,25 @@ struct ListingEditorView: View {
         NavigationStack {
             Form {
                 Section("主要信息") {
-                    TextField("房源名称", text: $draft.name)
-                        .accessibilityIdentifier("listingNameField")
-                    TextField("城市", text: $draft.city)
+                    PersistentFormField("房源名称") {
+                        TextField("例如：龙湖时代天街 01 卧", text: $draft.name)
+                            .accessibilityIdentifier("listingNameField")
+                    }
+                    PersistentFormField("城市") {
+                        TextField("例如：上海", text: $draft.city)
+                    }
                     Picker("租赁方式", selection: $draft.rentalType) {
                         ForEach(RentalType.allCases) { Text($0.title).tag($0) }
                     }
-                    TextField("月租", value: $draft.rent, format: .number)
-                        .keyboardType(.decimalPad)
-                        .accessibilityIdentifier("listingRentField")
-                    TextField("货币", text: $draft.currency)
-                        .textInputAutocapitalization(.characters)
+                    PersistentFormField("月租") {
+                        TextField("例如：3330", value: $draft.rent, format: .number)
+                            .keyboardType(.decimalPad)
+                            .accessibilityIdentifier("listingRentField")
+                    }
+                    PersistentFormField("货币") {
+                        TextField("例如：CNY", text: $draft.currency)
+                            .textInputAutocapitalization(.characters)
+                    }
                     Stepper("居室数：\(draft.roomCount ?? 1)", value: optionalIntBinding(\Listing.roomCount, fallback: 1), in: 1...20)
                 }
 
@@ -77,15 +85,23 @@ struct ListingEditorView: View {
                 }
 
                 Section("位置与空间") {
-                    TextField("地址", text: optionalStringBinding(\Listing.address))
-                    TextField("面积（\(areaUnit)）", value: $draft.area, format: .number)
-                        .keyboardType(.decimalPad)
+                    PersistentFormField("地址") {
+                        TextField("例如：徐汇区龙华路 1 号", text: optionalStringBinding(\Listing.address))
+                    }
+                    PersistentFormField("面积（\(areaUnit)）") {
+                        TextField("例如：37.13", value: $draft.area, format: .number)
+                            .keyboardType(.decimalPad)
+                    }
                     Picker("面积范围", selection: optionalStringBinding(\Listing.areaScope, fallback: "整套")) {
                         Text("整套").tag("整套")
                         Text("私人空间").tag("私人空间")
                     }
-                    TextField("户型", text: optionalStringBinding(\Listing.layout))
-                    TextField("楼层", text: optionalStringBinding(\Listing.floor))
+                    PersistentFormField("户型") {
+                        TextField("例如：3 室 2 厅", text: optionalStringBinding(\Listing.layout))
+                    }
+                    PersistentFormField("楼层") {
+                        TextField("例如：20/26", text: optionalStringBinding(\Listing.floor))
+                    }
                     Picker("电梯", selection: optionalBoolBinding(\Listing.hasElevator)) {
                         Text("待补充").tag(Bool?.none)
                         Text("有").tag(Bool?.some(true))
@@ -98,18 +114,26 @@ struct ListingEditorView: View {
                         Text("待补充").tag(CommuteMode?.none)
                         ForEach(CommuteMode.allCases) { Text($0.title).tag(CommuteMode?.some($0)) }
                     }
-                    TextField("单程分钟", value: $draft.commuteMinutes, format: .number)
-                        .keyboardType(.numberPad)
-                    TextField("单次支出", value: $draft.commuteFare, format: .number)
-                        .keyboardType(.decimalPad)
+                    PersistentFormField("单程时间（分钟）") {
+                        TextField("例如：30", value: $draft.commuteMinutes, format: .number)
+                            .keyboardType(.numberPad)
+                    }
+                    PersistentFormField("单次支出") {
+                        TextField("例如：5", value: $draft.commuteFare, format: .number)
+                            .keyboardType(.decimalPad)
+                    }
                 }
 
                 Section("费用明细") {
                     ForEach($draft.costs) { $item in
                         DisclosureGroup {
-                            TextField("名称", text: $item.name)
-                            TextField("金额", value: $item.amount, format: .number)
-                                .keyboardType(.decimalPad)
+                            PersistentFormField("费用名称") {
+                                TextField("例如：物业费", text: $item.name)
+                            }
+                            PersistentFormField("金额") {
+                                TextField("例如：300", value: $item.amount, format: .number)
+                                    .keyboardType(.decimalPad)
+                            }
                             Picker("周期", selection: $item.cadence) {
                                 ForEach(CostCadence.allCases) { Text($0.title).tag($0) }
                             }

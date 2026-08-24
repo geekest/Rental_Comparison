@@ -364,10 +364,10 @@ struct ListingDetailView: View {
                 }
                 .navigationTitle(listing.name)
                 .alert("淘汰这套房源？", isPresented: $showingEliminate) {
-                    TextField("原因（可选）", text: $eliminationReason)
+                    TextField("例如：通勤时间过长", text: $eliminationReason)
                     Button("取消", role: .cancel) {}
                     Button("淘汰", role: .destructive) { store.toggleEliminated(listing.id, reason: eliminationReason) }
-                } message: { Text("房源会退出当前对比，但可以随时恢复。") }
+                } message: { Text("可填写淘汰原因。房源会退出当前对比，但可以随时恢复。") }
                 .alert("添加待确认事项", isPresented: $showingAddUnknown) {
                     TextField("例如：确认夜间噪音", text: $unknownReason)
                     Button("取消", role: .cancel) { unknownReason = "" }

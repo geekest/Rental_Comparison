@@ -39,8 +39,10 @@ private struct InspectionItemSection: View {
             }
             .pickerStyle(.segmented)
             if item?.state == .issue {
-                TextField("记录问题（可选）", text: noteBinding, axis: .vertical)
-                    .lineLimit(2...5)
+                PersistentFormField("问题记录（可选）") {
+                    TextField("例如：卧室临街，关窗后仍有噪音", text: noteBinding, axis: .vertical)
+                        .lineLimit(2...5)
+                }
                 PhotosPicker(selection: $selectedPhotos, maxSelectionCount: max(3 - (item?.photoIDs.count ?? 0), 1), matching: .images) {
                     Label("添加现场照片（最多 3 张）", systemImage: "camera")
                 }

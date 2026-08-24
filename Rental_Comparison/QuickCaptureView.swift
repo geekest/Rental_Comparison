@@ -31,11 +31,15 @@ struct QuickCaptureView: View {
                 }
 
                 Section("候选信息") {
-                    TextField("名称", text: $name)
-                        .accessibilityIdentifier("listingNameField")
-                    TextField("月租（可选）", text: $rentText)
-                        .keyboardType(.decimalPad)
-                        .accessibilityIdentifier("listingRentField")
+                    PersistentFormField("房源名称") {
+                        TextField("例如：龙湖时代天街 01 卧", text: $name)
+                            .accessibilityIdentifier("listingNameField")
+                    }
+                    PersistentFormField("月租（可选）") {
+                        TextField("例如：3330", text: $rentText)
+                            .keyboardType(.decimalPad)
+                            .accessibilityIdentifier("listingRentField")
+                    }
                     LabeledContent("货币", value: store.state.hunt.defaultCurrency)
                 }
 
