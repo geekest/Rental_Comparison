@@ -18,11 +18,15 @@ targets:
       - path: web_version/public/assets/listings
         type: folder
         buildPhase: resources
+    dependencies:
+      - target: Rental_ComparisonShareExtension
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.geekest.RentalComparison
         PRODUCT_NAME: Rental_Comparison
-        GENERATE_INFOPLIST_FILE: YES
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Rental_Comparison/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: 租房对比
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.lifestyle
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
@@ -58,3 +62,15 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.geekest.RentalComparisonUITests
         GENERATE_INFOPLIST_FILE: YES
         TEST_TARGET_NAME: Rental_Comparison
+  Rental_ComparisonShareExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Rental_ComparisonShareExtension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.geekest.RentalComparison.ShareExtension
+        PRODUCT_NAME: Rental_ComparisonShareExtension
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Rental_ComparisonShareExtension/Info.plist
+        SKIP_INSTALL: YES

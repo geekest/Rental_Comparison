@@ -150,6 +150,7 @@ struct Option: Identifiable, Codable, Hashable {
     var sourceRefs: [String]
     var factIDs: [UUID]
     var evidenceIDs: [UUID]
+    var primaryEvidenceID: UUID? = nil
     var verificationTaskIDs: [UUID]
     var createdAt: Date
     var updatedAt: Date
@@ -177,6 +178,16 @@ struct Evidence: Identifiable, Codable, Hashable {
     var text: String?
     var sourceURL: String?
     var capturedAt: Date
+}
+
+struct ListingMedia: Identifiable, Hashable {
+    let evidenceID: UUID
+    let mediaID: String
+    let type: EvidenceType
+    let capturedAt: Date
+
+    var id: UUID { evidenceID }
+    var isScreenshot: Bool { type == .screenshot }
 }
 
 struct Criterion: Identifiable, Codable, Hashable {
@@ -260,6 +271,7 @@ struct DecisionWorkspace: Codable, Hashable {
 }
 
 enum FactKey {
+    static let city = "city"
     static let monthlyRent = "monthly_rent"
     static let rentalType = "rental_type"
     static let address = "address"
