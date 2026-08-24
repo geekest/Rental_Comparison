@@ -1,10 +1,110 @@
 import SwiftUI
 
+private final class ComparisonScrollCoordinator {
+    private final class WeakScrollView {
+        weak var value: UIScrollView?
+
+        init(_ value: UIScrollView) {
+            self.value = value
+        }
+    }
+
+    private var scrollViews: [ObjectIdentifier: WeakScrollView] = [:]
+    private var observations: [ObjectIdentifier: NSKeyValueObservation] = [:]
+    private var isSynchronizing = false
+
+    func register(_ scrollView: UIScrollView) {
+        let id = ObjectIdentifier(scrollView)
+        guard observations[id] == nil else { return }
+
+        scrollViews[id] = WeakScrollView(scrollView)
+        observations[id] = scrollView.observe(\UIScrollView.contentOffset, options: [.new]) { [weak self, weak scrollView] _, _ in
+            guard let scrollView else { return }
+            self?.synchronize(from: scrollView)
+        }
+    }
+
+    private func synchronize(from source: UIScrollView) {
+        guard !isSynchronizing else { return }
+        isSynchronizing = true
+        defer { isSynchronizing = false }
+
+        let sourceOffset = source.contentOffset.x
+        scrollViews = scrollViews.filter { $0.value.value != nil }
+        for (id, weakScrollView) in scrollViews {
+            guard let target = weakScrollView.value, id != ObjectIdentifier(source) else { continue }
+            let minimumX = -target.adjustedContentInset.left
+            let maximumX = max(minimumX, target.contentSize.width - target.bounds.width + target.adjustedContentInset.right)
+            let targetX = min(max(sourceOffset, minimumX), maximumX)
+            guard abs(target.contentOffset.x - targetX) > 0.5 else { continue }
+
+            var targetOffset = target.contentOffset
+            targetOffset.x = targetX
+            target.setContentOffset(targetOffset, animated: false)
+        }
+    }
+}
+
+private struct ComparisonScrollResolver: UIViewRepresentable {
+    let coordinator: ComparisonScrollCoordinator
+
+    func makeUIView(context: Context) -> ComparisonScrollResolverView {
+        let view = ComparisonScrollResolverView()
+        view.resolve = { [coordinator] scrollView in
+            coordinator.register(scrollView)
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: ComparisonScrollResolverView, context: Context) {}
+}
+
+private final class ComparisonScrollResolverView: UIView {
+    var resolve: ((UIScrollView) -> Void)?
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        isUserInteractionEnabled = false
+        backgroundColor = .clear
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        guard window != nil else { return }
+
+        DispatchQueue.main.async { [weak self] in
+            var ancestor = self?.superview
+            while let view = ancestor {
+                if let scrollView = view as? UIScrollView {
+                    self?.resolve?(scrollView)
+                    return
+                }
+                ancestor = view.superview
+            }
+        }
+    }
+}
+
+private enum ComparisonLayout {
+    static let columnWidth: CGFloat = 180
+    static let columnSpacing: CGFloat = 16
+    static let columnContentInset: CGFloat = 16
+    static let sectionHorizontalInset: CGFloat = 24
+    static let titleContentSpacing: CGFloat = 16
+}
+
 struct ComparisonView: View {
     @Environment(AppStore.self) private var store
     @State private var showingManager = false
     @State private var showingFinal = false
-    @State private var showingFullMatrix = false
+    @State private var showingAnalysis = true
+    @State private var showingFullMatrix = true
+    @State private var comparisonScrollCoordinator = ComparisonScrollCoordinator()
 
     private var listings: [Listing] { store.comparisonListings }
 
@@ -22,72 +122,102 @@ struct ComparisonView: View {
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 28) {
-                        ComparisonHeader(listings: listings)
-
-                        DifferenceFirstSummary(listings: listings)
-
-                        Button(showingFullMatrix ? "收起完整对比" : "查看完整对比") {
-                            withAnimation { showingFullMatrix.toggle() }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .buttonStyle(.bordered)
-                        .padding(.horizontal)
-
-                        if showingFullMatrix {
-                            ComparisonSection(title: "真实成本", subtitle: "月租与固定费用的月均支出", symbol: "wallet.pass") { listing in
-                            let summary = DecisionEngine.calculateCosts(for: listing, expectedMonths: store.task.expectedMonths)
-                            VStack(alignment: .leading, spacing: 8) {
-                                MetricValue(summary.monthlyHousing.formattedMoney(currency: listing.currency), caption: "月均居住成本")
-                                MetricValue(summary.firstCash.formattedMoney(currency: listing.currency), caption: "首期现金")
-                                if !summary.unknowns.isEmpty {
-                                    StatusPill(text: "\(summary.unknowns.count) 项费用未知", systemImage: "questionmark.circle", color: .orange)
-                                }
-                            }
-                            }
-
-                            ComparisonSection(title: "通勤时间", subtitle: "前往 \(store.task.commuteDestination.isEmpty ? "主要目的地" : store.task.commuteDestination) 的单程记录", symbol: "clock") { listing in
-                            VStack(alignment: .leading, spacing: 8) {
-                                MetricValue(listing.commuteMinutes.map { "\($0) 分钟" } ?? "待补充", caption: listing.commuteMode?.title ?? "方式待补充")
-                                Text(listing.commuteFare.map { "\($0.formattedMoney(currency: listing.currency)) / 次" } ?? "通勤支出待补充")
-                                    .foregroundStyle(.secondary)
-                            }
-                            }
-
-                            ComparisonSection(title: "条件风险", subtitle: "硬性冲突、未知项与普通偏好", symbol: "checklist") { listing in
-                            VStack(alignment: .leading, spacing: 8) {
-                                let conflicts = DecisionEngine.requiredConflicts(in: store.task, listing: listing)
-                                if conflicts.isEmpty {
-                                    StatusPill(text: "无已知硬性冲突", systemImage: "checkmark.circle.fill", color: .green)
-                                } else {
-                                    ForEach(conflicts) { condition in
-                                        StatusPill(
-                                            text: condition.name,
-                                            systemImage: listing.conditionResults[condition.id] == .conflict ? "xmark.octagon.fill" : "questionmark.circle.fill",
-                                            color: listing.conditionResults[condition.id] == .conflict ? .red : .orange
-                                        )
+                        DisclosureGroup(isExpanded: $showingFullMatrix) {
+                            VStack(alignment: .leading, spacing: 28) {
+                                ComparisonSection(
+                                    title: "真实成本",
+                                    subtitle: "月租与固定费用的月均支出",
+                                    symbol: "wallet.pass",
+                                    scrollCoordinator: comparisonScrollCoordinator
+                                ) { listing in
+                                    let summary = DecisionEngine.calculateCosts(for: listing, expectedMonths: store.task.expectedMonths)
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        MetricValue(summary.monthlyHousing.formattedMoney(currency: listing.currency), caption: "月均居住成本")
+                                        MetricValue(summary.firstCash.formattedMoney(currency: listing.currency), caption: "首期现金")
+                                        if !summary.unknowns.isEmpty {
+                                            StatusPill(text: "\(summary.unknowns.count) 项费用未知", systemImage: "questionmark.circle", color: .orange)
+                                        }
                                     }
                                 }
-                            }
-                            }
 
-                            ComparisonSection(title: "看房记录", subtitle: "已记录的现场异常", symbol: "eye") { listing in
-                            let issues = DecisionEngine.inspectionIssues(in: listing)
-                            VStack(alignment: .leading, spacing: 8) {
-                                if issues.isEmpty {
-                                    StatusPill(text: "无已记录异常", systemImage: "checkmark.circle", color: .green)
-                                } else {
-                                    ForEach(issues) { issue in
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Label(issue.name, systemImage: "exclamationmark.triangle.fill")
-                                                .font(.subheadline.weight(.semibold))
-                                                .foregroundStyle(.orange)
-                                            if !issue.note.isEmpty { Text(issue.note).font(.caption).foregroundStyle(.secondary) }
+                                ComparisonSection(
+                                    title: "通勤时间",
+                                    subtitle: "前往 \(store.task.commuteDestination.isEmpty ? "主要目的地" : store.task.commuteDestination) 的单程记录",
+                                    symbol: "clock",
+                                    scrollCoordinator: comparisonScrollCoordinator
+                                ) { listing in
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        MetricValue(listing.commuteMinutes.map { "\($0) 分钟" } ?? "待补充", caption: listing.commuteMode?.title ?? "方式待补充")
+                                            .accessibilityIdentifier("comparisonMetric-commute-\(listing.id.uuidString)")
+                                        Text(listing.commuteFare.map { "\($0.formattedMoney(currency: listing.currency)) / 次" } ?? "通勤支出待补充")
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+
+                                ComparisonSection(
+                                    title: "条件风险",
+                                    subtitle: "硬性冲突、未知项与普通偏好",
+                                    symbol: "checklist",
+                                    scrollCoordinator: comparisonScrollCoordinator
+                                ) { listing in
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        let conflicts = DecisionEngine.requiredConflicts(in: store.task, listing: listing)
+                                        if conflicts.isEmpty {
+                                            StatusPill(text: "无已知硬性冲突", systemImage: "checkmark.circle.fill", color: .green)
+                                        } else {
+                                            ForEach(conflicts) { condition in
+                                                StatusPill(
+                                                    text: condition.name,
+                                                    systemImage: listing.conditionResults[condition.id] == .conflict ? "xmark.octagon.fill" : "questionmark.circle.fill",
+                                                    color: listing.conditionResults[condition.id] == .conflict ? .red : .orange
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                ComparisonSection(
+                                    title: "看房记录",
+                                    subtitle: "已记录的现场异常",
+                                    symbol: "eye",
+                                    scrollCoordinator: comparisonScrollCoordinator
+                                ) { listing in
+                                    let issues = DecisionEngine.inspectionIssues(in: listing)
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        if issues.isEmpty {
+                                            StatusPill(text: "无已记录异常", systemImage: "checkmark.circle", color: .green)
+                                        } else {
+                                            ForEach(issues) { issue in
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Label(issue.name, systemImage: "exclamationmark.triangle.fill")
+                                                        .font(.subheadline.weight(.semibold))
+                                                        .foregroundStyle(.orange)
+                                                    if !issue.note.isEmpty { Text(issue.note).font(.caption).foregroundStyle(.secondary) }
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
-                            }
+                            .padding(.top, ComparisonLayout.titleContentSpacing)
+                        } label: {
+                            Label("详细数据", systemImage: "list.bullet.rectangle")
+                                .font(.title2.bold())
                         }
+                        .padding(.horizontal, ComparisonLayout.sectionHorizontalInset)
+                        .accessibilityIdentifier("comparisonDetailsDisclosure")
+                        .accessibilityValue(showingFullMatrix ? "已展开" : "已收起")
+
+                        DisclosureGroup(isExpanded: $showingAnalysis) {
+                            DifferenceFirstSummary(listings: listings)
+                                .padding(.top, ComparisonLayout.titleContentSpacing)
+                        } label: {
+                            Label("对比分析", systemImage: "chart.bar.xaxis")
+                                .font(.title2.bold())
+                        }
+                        .padding(.horizontal, ComparisonLayout.sectionHorizontalInset)
+                        .accessibilityIdentifier("comparisonAnalysisDisclosure")
+                        .accessibilityValue(showingAnalysis ? "已展开" : "已收起")
 
                         if store.task.completed, let finalID = store.task.finalListingID {
                             NavigationLink {
@@ -116,25 +246,38 @@ struct ComparisonView: View {
             }
         }
         .navigationTitle("比较房源")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar { Button("调整") { showingManager = true } }
         .sheet(isPresented: $showingManager) { CompareManagerView() }
         .sheet(isPresented: $showingFinal) { FinalDecisionView() }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if listings.count >= 2 {
+                ComparisonHeader(listings: listings, scrollCoordinator: comparisonScrollCoordinator)
+                    .padding(.vertical, 8)
+                    .background(.background)
+                    .overlay(alignment: .bottom) { Divider() }
+            }
+        }
         .accessibilityIdentifier("comparisonScreen")
     }
 }
 private struct ComparisonHeader: View {
     @Environment(AppStore.self) private var store
     let listings: [Listing]
+    let scrollCoordinator: ComparisonScrollCoordinator
 
     var body: some View {
         ScrollView(.horizontal) {
-            HStack(alignment: .top, spacing: 16) {
+            HStack(alignment: .top, spacing: ComparisonLayout.columnSpacing) {
                 ForEach(listings) { listing in
                     VStack(alignment: .leading, spacing: 8) {
                         ListingImageView(listing: listing)
-                            .frame(width: 180, height: 120)
+                            .frame(width: ComparisonLayout.columnWidth, height: 120)
                             .clipShape(RoundedRectangle(cornerRadius: 18))
-                        Text(listing.name).font(.headline).lineLimit(2)
+                        Text(listing.name)
+                            .font(.headline)
+                            .lineLimit(2)
+                            .accessibilityIdentifier("comparisonHeader-\(listing.id.uuidString)")
                         if listing.id == store.task.baselineID {
                             StatusPill(text: "比较基准", systemImage: "pin.fill", color: .blue)
                         } else {
@@ -142,11 +285,12 @@ private struct ComparisonHeader: View {
                                 .font(.subheadline)
                         }
                     }
-                    .frame(width: 180, alignment: .leading)
+                    .frame(width: ComparisonLayout.columnWidth, alignment: .leading)
                 }
             }
+            .background(ComparisonScrollResolver(coordinator: scrollCoordinator))
         }
-        .contentMargins(.horizontal, 20, for: .scrollContent)
+        .padding(.horizontal, ComparisonLayout.sectionHorizontalInset)
         .scrollIndicators(.hidden)
     }
 }
@@ -233,7 +377,6 @@ private struct DifferenceFirstSummary: View {
                 }
             }
         }
-        .padding(.horizontal)
     }
 
     private func differenceSection<Content: View>(_ title: String, symbol: String, @ViewBuilder content: () -> Content) -> some View {
@@ -252,6 +395,7 @@ private struct ComparisonSection<Content: View>: View {
     let title: String
     let subtitle: String
     let symbol: String
+    let scrollCoordinator: ComparisonScrollCoordinator
     @ViewBuilder let content: (Listing) -> Content
     @Environment(AppStore.self) private var store
 
@@ -260,19 +404,20 @@ private struct ComparisonSection<Content: View>: View {
             Label(title, systemImage: symbol).font(.title2.bold())
             Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
             ScrollView(.horizontal) {
-                HStack(alignment: .top, spacing: 0) {
+                HStack(alignment: .top, spacing: ComparisonLayout.columnSpacing) {
                     ForEach(store.comparisonListings) { listing in
                         content(listing)
-                            .frame(width: 220, alignment: .leading)
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, ComparisonLayout.columnContentInset)
+                            .frame(width: ComparisonLayout.columnWidth, alignment: .leading)
                             .frame(maxHeight: .infinity, alignment: .top)
                             .overlay(alignment: .trailing) { Divider() }
                     }
+                    .background(ComparisonScrollResolver(coordinator: scrollCoordinator))
                 }
             }
             .scrollIndicators(.hidden)
+            .accessibilityIdentifier("comparisonSection-\(title)")
         }
-        .padding(.horizontal)
     }
 }
 
