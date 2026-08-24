@@ -2,20 +2,22 @@
 
 ## 项目概览
 
-本仓库用于建设 `Rental_Comparison` App。当前先通过 `web_version/` 验证手机 Web MVP，具体产品目标以 `docs/product/` 下的产品文档为准。
+本仓库用于建设 `Rental_Comparison` 原生 iOS App。当前主开发工作在 `Rental_Comparison/` 和 `Rental_ComparisonShareExtension/`，`web_version/` 是已冻结的历史验证原型。
 
 主要技术栈：
 
-- 目标平台：Web 验证原型；正式产品仍以 iPhone 为目标
-- 开发语言：TypeScript
-- UI 框架：React 19
-- 数据存储：IndexedDB
-- 测试框架：Vitest、Playwright
-- 构建工具：Vite、npm、Biome
+- 目标平台：iPhone 原生 App，最低部署版本以 `project.yml` 为准
+- 开发语言：Swift 5.10
+- UI 框架：SwiftUI、Observation
+- 数据存储：版本化 Codable JSON 与本地媒体文件
+- 测试框架：XCTest、XCUITest
+- 构建工具：XcodeGen、xcodebuild
+- 历史验证技术栈：Web 目录内的 React、TypeScript、Vite、IndexedDB、Vitest、Playwright 和 Biome
 
 ## 目录结构
 
 - `Rental_Comparison/`：App 主代码目录
+- `Rental_ComparisonShareExtension/`：系统 Share Extension
 - `Rental_ComparisonTests/`：单元测试目录
 - `Rental_ComparisonUITests/`：UI 测试目录
 - `docs/product/`：产品目标与 MVP 范围
@@ -24,6 +26,7 @@
 - `docs/design/`：设计草图与页面索引
 - `.codex/plans/`：复杂任务的 ExecPlan
 - `web_version/`：手机 Web 验证原型、测试与静态构建
+- `docs/development_status.md`：当前基线、分支差异与验证证据
 
 ## 文档权威关系
 
@@ -71,14 +74,10 @@
 
 ## 测试与验证
 
-- 单元测试：`cd web_version && npm run test:unit`
-- UI 测试：`cd web_version && npm run test:e2e`
-- 移动运行时：`cd web_version && npm run check:runtime`
-- 静态产物：先运行 `npm run build`，再运行 `npm run test:sites`
-- Lint：`cd web_version && npm run lint`
-- Typecheck：`cd web_version && npm run typecheck`
-- Format：`cd web_version && npm run format:check`
 - iOS 测试：`DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Rental_Comparison.xcodeproj -scheme Rental_Comparison -destination 'platform=iOS Simulator,name=iPhone 16e' test`
+- Web 历史单元测试：`cd web_version && npm run test:unit`
+- Web 历史 UI 测试：`cd web_version && npm run test:e2e`
+- Web 历史完整检查：进入 `web_version/` 后按其 README 执行 runtime、lint、typecheck、format 和 build 命令
 
 新增功能时，应根据影响范围同步补充测试或记录无法验证的原因。
 
@@ -101,7 +100,7 @@
 
 ## 依赖新增规则
 
-- Web 原型已确认 React、移动原型运行时和 Tesseract.js 等锁定依赖，具体版本以 `web_version/package-lock.json` 为准。
+- Web 原型依赖只服务于历史验证，具体版本以 `web_version/package-lock.json` 为准；iOS 主线不新增 Web 依赖。
 - 新增生产依赖前，需要说明用途、替代方案、维护风险和体积影响，并获得确认。
 
 ## 高风险变更

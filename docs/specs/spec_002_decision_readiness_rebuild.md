@@ -3,7 +3,7 @@
 ## 文档状态
 
 - 状态：已确认，实施中
-- 最近更新：2026-08-19
+- 最近更新：2026-08-24
 - 适用阶段：iOS P0
 - 替代关系：本规格是 v2 iOS 的权威行为；[SPEC-001](spec_001_core_flow.md) 仅保留 v1 兼容语义。
 
@@ -100,4 +100,4 @@ Hunt 保存默认 ISO 4217 货币；界面使用系统 Locale。不同货币禁�
 
 ## 非目标
 
-房源搜索、供给聚合、自动申请、签约、支付、登录、云同步、综合评分、自动赢家、远程 AI、任意 URL 解析、地图自动通勤、多人协作、Android 和 iPad 专门布局不在本轮 P0。原生 iOS 本轮新增的 Share Extension 与链家、贝壳、Reddit 首批链接适配器，以 [房源多入口导入规格](spec_003_listing_import.md) 为准。
+房源搜索、供给聚合、自动申请、签约、支付、登录、云同步、综合评分、自动赢家、远程 AI、任意 URL 解析、地图自动通勤、多人协作、Android 和 iPad 专门布局不在本轮 P0。Share Extension、首批 Provider Adapter 和本地 OCR 的具体行为，以 [房源多入口导入规格](spec_003_listing_import.md) 为准；真实系统分享面板和在线平台兼容性不因 Simulator 或 fixture 通过而自动视为完成。
