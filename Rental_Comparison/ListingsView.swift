@@ -329,13 +329,34 @@ private struct ListingCardCover: View {
                 ListingImageView(listing: listing)
                     .frame(width: proxy.size.width, height: proxy.size.height)
                 if listing.focused {
-                    StatusPill(text: "重点考虑", systemImage: "star.fill", color: WarmDesign.warning)
+                    ListingFocusBadge()
                         .padding(12)
                 }
             }
         }
         .aspectRatio(16.0 / 9.0, contentMode: .fit)
         .clipped()
+    }
+}
+
+private struct ListingFocusBadge: View {
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "star.fill")
+                .foregroundStyle(.yellow)
+            Text("重点考虑")
+                .foregroundStyle(.white)
+        }
+        .font(.caption.weight(.bold))
+        .padding(.horizontal, 11)
+        .padding(.vertical, 7)
+        .background(.black.opacity(0.58), in: Capsule())
+        .overlay {
+            Capsule()
+                .stroke(.white.opacity(0.72), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+        .accessibilityLabel("重点考虑")
     }
 }
 
