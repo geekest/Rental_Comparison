@@ -59,6 +59,8 @@ final class RentalComparisonUITests: XCTestCase {
 
         comparisonButton.tap()
         XCTAssertEqual(comparisonButton.label, "已加入对比")
+        comparisonButton.tap()
+        XCTAssertEqual(comparisonButton.label, "加入对比")
 
         let card = app.otherElements["listingCard_\(listingID)"]
         XCTAssertTrue(card.waitForExistence(timeout: 3))

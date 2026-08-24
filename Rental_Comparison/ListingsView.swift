@@ -227,21 +227,30 @@ private struct ListingCard: View {
                     }
                 }
                 HStack(spacing: 12) {
-                    if store.task.comparisonIDs.contains(listing.id) {
-                        Button("已加入对比") {}
-                            .frame(maxWidth: .infinity)
-                            .buttonStyle(.bordered)
-                            .tint(WarmDesign.moss)
-                            .disabled(true)
-                            .accessibilityIdentifier("comparisonButton_\(listing.id.uuidString)")
+                    let isCompared = store.task.comparisonIDs.contains(listing.id)
+                    if isCompared {
+                        Button {
+                            _ = store.toggleComparison(listing.id)
+                        } label: {
+                            Label("已加入对比", systemImage: "checkmark")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(WarmDesign.moss)
+                        .accessibilityValue("已选中，可点击取消")
+                        .accessibilityIdentifier("comparisonButton_\(listing.id.uuidString)")
                     } else {
                         Button {
-                            if !store.toggleComparison(listing.id) { limitMessage = "一次最多比较 5 套候选房源。" }
+                            if !store.toggleComparison(listing.id) {
+                                limitMessage = "一次最多比较 5 套候选房源。"
+                            }
                         } label: {
-                            Text("加入对比").frame(maxWidth: .infinity)
+                            Label("加入对比", systemImage: "plus")
+                                .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(WarmDesign.moss)
+                        .accessibilityValue("未选中，可点击加入")
                         .accessibilityIdentifier("comparisonButton_\(listing.id.uuidString)")
                     }
                     NavigationLink(value: listing.id) {
