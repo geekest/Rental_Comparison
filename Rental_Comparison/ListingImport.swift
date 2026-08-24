@@ -32,6 +32,10 @@ struct ListingImportDraft: Identifiable, Hashable {
     var sourceDescription = ""
     var imageURLs: [URL] = []
     var photoIDs: [String] = []
+    var sourceScreenshotIDs: [String] = []
+    var coverSourceScreenshotID: String?
+    var coverCropSelection: ListingCoverCropSelection?
+    var automaticCoverCropSelection: ListingCoverCropSelection?
     var name = ""
     var city = ""
     var monthlyRent: Double?
@@ -89,27 +93,35 @@ enum ListingImportParser {
 
     static func parse(text: String, provider: ListingProvider? = nil) -> ListingImportDraft {
         let normalized = text.htmlDecoded.replacingOccurrences(of: "\u{00a0}", with: " ")
-        let compact = normalized.replacingOccurrences(of: "[ \t]+", with: " ", options: .regularExpression)
+        let lines = normalized.components(separatedBy: .newlines)
+            .map { $0.replacingOccurrences(of: "[ \t]+", with: " ", options: .regularExpression).trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        let compact = lines.joined(separator: "\n")
         let rent = firstNumber(
             in: compact,
             patterns: [
                 #"([0-9]{1,6}(?:,[0-9]{3})*(?:\.[0-9]+)?)\s*元\s*/?\s*月"#,
-                #"(?:¥|\$)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\s*(?:/\s*month|per\s*month|monthly|/\s*mo)?"#,
+                #"(?:¥|￥|\$)\s*([0-9]{1,6}(?:\.[0-9]+)?|[0-9]{1,3}(?:,[0-9]{3})+(?:\.[0-9]+)?)\s*(?:元)?\s*(?:/|每|per\s*)?\s*(?:月|month|mo)"#,
                 #"([0-9]{2,6}(?:\.[0-9]+)?)\s*(?:per\s*month|/\s*month|monthly)"#
             ]
         )
         let area = firstNumber(in: compact, patterns: [#"([0-9]+(?:\.[0-9]+)?)\s*(?:㎡|m²|平方米)"#])
-        let layout = firstMatch(in: compact, patterns: [#"([0-9]+\s*室\s*[0-9]+\s*厅)"#, #"([0-9]+\s*(?:bed|bedroom)s?)"#])
+            ?? firstNumber(after: ["使用面积", "面积"], in: lines, patterns: [#"([0-9]+(?:\.[0-9]+)?)\s*(?:m|米)?"#])
+        let layout = firstMatch(
+            in: compact,
+            patterns: [#"([0-9]+\s*室(?:\s*[0-9]+\s*厅)?(?:\s*[0-9]+\s*卫)?)"#, #"([0-9]+\s*(?:bed|bedroom)s?)"#]
+        )
         let roomCount = layout.flatMap { firstNumber(in: $0, patterns: [#"([0-9]+)\s*(?:室|bed|bedroom)"#]).map(Int.init) }
         let rentalType: RentalType = compact.localizedCaseInsensitiveContains("合租") || compact.localizedCaseInsensitiveContains("shared") || compact.localizedCaseInsensitiveContains("roommate") ? .shared : .entire
         let city = cityName(in: compact)
-        let name = listingName(from: compact)
+        let name = listingName(from: lines)
         var draft = ListingImportDraft()
         draft.provider = provider
         draft.name = name
         draft.city = city
         draft.monthlyRent = rent
-        draft.address = addressCandidate(from: compact)
+        draft.currency = currencyCode(in: compact)
+        draft.address = addressCandidate(from: lines)
         draft.area = area
         draft.layout = layout
         draft.roomCount = roomCount
@@ -157,6 +169,15 @@ enum ListingImportParser {
         }.first
     }
 
+    private static func firstNumber(after labels: [String], in lines: [String], patterns: [String]) -> Double? {
+        for (index, line) in lines.enumerated() where labels.contains(where: { line == $0 || line.hasPrefix("\($0)：") || line.hasPrefix("\($0):") }) {
+            if let value = firstNumber(in: line, patterns: patterns) { return value }
+            guard lines.indices.contains(index + 1) else { continue }
+            if let value = firstNumber(in: lines[index + 1], patterns: patterns) { return value }
+        }
+        return nil
+    }
+
     private static func firstMatch(in text: String, patterns: [String]) -> String? {
         for pattern in patterns {
             guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
@@ -167,19 +188,49 @@ enum ListingImportParser {
         return nil
     }
 
-    private static func listingName(from text: String) -> String {
-        if let separator = text.range(of: "·") {
-            let tail = text[separator.upperBound...]
-            return String(tail.split(separator: " ").first ?? "").trimmingCharacters(in: .punctuationCharacters)
+    private static func listingName(from lines: [String]) -> String {
+        for line in lines where line.localizedCaseInsensitiveContains("整租") || line.localizedCaseInsensitiveContains("合租") {
+            if let match = firstMatch(
+                in: line,
+                patterns: [#"(?:整租|合租)\s*[·•・|｜\-—]\s*(.{2,48}?)(?=\s+[0-9]+\s*室|$)"#]
+            ) {
+                return match.trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
+            }
         }
-        if let match = firstMatch(in: text, patterns: [#"(.{2,32}?)(?:[0-9]+\s*(?:室|bed|bedroom))"#]) {
-            return match.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        for line in lines where !isInterfaceNoise(line) {
+            if let match = firstMatch(in: line, patterns: [#"(.{2,32}?)(?:[0-9]+\s*(?:室|bed|bedroom))"#]) {
+                return match.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
         }
-        return String(text.split(separator: "\n").first ?? "").prefix(48).description
+
+        return String(lines.first(where: { !isInterfaceNoise($0) }) ?? "").prefix(48).description
     }
 
-    private static func addressCandidate(from text: String) -> String? {
-        firstMatch(in: text, patterns: [#"([\u4e00-\u9fa5]{2,8}(?:区|县|镇|街道|路|街|弄|号)[^，。;；]{0,28})"#])
+    private static func addressCandidate(from lines: [String]) -> String? {
+        for line in lines {
+            let candidate = firstMatch(in: line, patterns: [#"(?:地址|位置)\s*[:：]\s*(.{3,48})"#]) ?? line
+            guard !candidate.contains("月租"), !candidate.contains("合租"), !candidate.contains("整租") else { continue }
+            let hasAdministrativeArea = candidate.range(of: #"[\u4e00-\u9fa5]{2,}(?:市|区|县|镇|街道)"#, options: .regularExpression) != nil
+            let hasRoad = candidate.range(of: #"(?:路|街|弄|大道)"#, options: .regularExpression) != nil
+            let hasStreetNumber = candidate.range(of: #"(?:路|街|弄|大道)[^，。;；]{0,16}(?:号|弄)"#, options: .regularExpression) != nil
+            if (hasAdministrativeArea && hasRoad) || hasStreetNumber {
+                return candidate.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+        return nil
+    }
+
+    private static func currencyCode(in text: String) -> String {
+        if text.range(of: #"HK\s*\$"#, options: [.regularExpression, .caseInsensitive]) != nil { return "HKD" }
+        if text.contains("$") { return "USD" }
+        return "CNY"
+    }
+
+    private static func isInterfaceNoise(_ line: String) -> Bool {
+        if line.range(of: #"^\s*\d{1,2}:\d{2}"#, options: .regularExpression) != nil { return true }
+        let exactNoise = ["视频", "图片", "评价", "签约", "电话", "在线咨询", "去看房", "租金试算"]
+        return exactNoise.contains(line) || line.range(of: #"^\d{1,3}%?$"#, options: .regularExpression) != nil
     }
 
     private static func cityName(in text: String) -> String {

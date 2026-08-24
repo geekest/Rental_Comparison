@@ -204,7 +204,14 @@ final class AppStore {
         evidence += draft.photoIDs.map {
             .init(
                 id: UUID(), optionID: optionID,
-                type: draft.sourceURL == nil ? .screenshot : .photo,
+                type: .photo,
+                mediaID: $0, bundledAssetName: nil, text: nil,
+                sourceURL: sourceURL, capturedAt: now
+            )
+        }
+        evidence += draft.sourceScreenshotIDs.map {
+            .init(
+                id: UUID(), optionID: optionID, type: .screenshot,
                 mediaID: $0, bundledAssetName: nil, text: nil,
                 sourceURL: sourceURL, capturedAt: now
             )

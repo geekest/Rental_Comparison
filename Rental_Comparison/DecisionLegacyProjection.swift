@@ -63,7 +63,11 @@ enum DecisionLegacyProjection {
             return .init(id: UUID(uuidString: fact.key.replacingOccurrences(of: FactKey.costPrefix, with: "")) ?? fact.id, name: value.name, amount: value.amount, cadence: value.cadence, refundable: value.refundable, confirmed: fact.verificationState != .unknown)
         }
         let bundledImageName = evidence.first(where: { $0.bundledAssetName != nil })?.bundledAssetName
-        let photoIDs = evidence.compactMap(\.mediaID)
+        let taskEvidenceIDs = Set(tasks.flatMap(\.evidenceIDs))
+        let listingEvidence = evidence.filter { !taskEvidenceIDs.contains($0.id) }
+        let coverPhotoIDs = listingEvidence.filter { $0.type == .photo }.compactMap(\.mediaID)
+        let screenshotIDs = listingEvidence.filter { $0.type == .screenshot }.compactMap(\.mediaID)
+        let photoIDs = coverPhotoIDs.isEmpty ? screenshotIDs : coverPhotoIDs
 
         return .init(
             id: option.id,

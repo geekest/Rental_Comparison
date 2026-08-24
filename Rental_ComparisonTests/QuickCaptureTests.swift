@@ -44,5 +44,6 @@ final class QuickCaptureTests: XCTestCase {
         XCTAssertTrue(store.state.evidence.contains {
             $0.optionID == optionID && $0.mediaID == "capture-screenshot" && $0.type == .screenshot
         })
+        XCTAssertEqual(store.task.listings.first { $0.id == optionID }?.photoIDs, ["capture-screenshot"])
     }
 }

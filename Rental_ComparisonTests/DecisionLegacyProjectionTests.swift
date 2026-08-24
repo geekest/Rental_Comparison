@@ -18,5 +18,6 @@ final class DecisionLegacyProjectionTests: XCTestCase {
         XCTAssertEqual(jingan.rent, 8_200)
         XCTAssertEqual(noiseInspection.state, .issue)
         XCTAssertEqual(noiseInspection.photoIDs, ["noise-photo"])
+        XCTAssertFalse(jingan.photoIDs.contains("noise-photo"))
     }
 }

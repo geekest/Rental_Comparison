@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 @testable import Rental_Comparison
 
 final class ListingImportTests: XCTestCase {
@@ -34,9 +35,60 @@ final class ListingImportTests: XCTestCase {
 
         XCTAssertEqual(draft.provider, .reddit)
         XCTAssertEqual(draft.monthlyRent, 1650)
+        XCTAssertEqual(draft.currency, "USD")
         XCTAssertEqual(draft.roomCount, 1)
         XCTAssertNil(draft.area)
         XCTAssertEqual(draft.city, "")
+    }
+
+    func testParsesRawScreenshotOCRIntoMatchingFields() {
+        let text = """
+        Assets
+        ComparisonView
+        Re
+        09:44 L
+        100
+        视频
+        图片
+        评价
+        必看好房｜严选好房・品质好・价格优
+        合租•龙湖时代天街-01卧
+        ¥3330/月（季付价）
+        23-26年毕业生
+        使用面积
+        37.13m
+        户型
+        3室2厅2卫
+        朝向
+        朝南
+        楼层
+        20/26
+        独立起居室
+        独立卫生间
+        """
+
+        let draft = ListingImportParser.parse(text: text)
+
+        XCTAssertEqual(draft.name, "龙湖时代天街-01卧")
+        XCTAssertEqual(draft.monthlyRent, 3330)
+        XCTAssertEqual(draft.area, 37.13)
+        XCTAssertEqual(draft.layout, "3室2厅2卫")
+        XCTAssertEqual(draft.roomCount, 3)
+        XCTAssertEqual(draft.rentalType, .shared)
+        XCTAssertNil(draft.address)
+    }
+
+    func testParsesExplicitAddressWithoutTreatingListingNameAsAddress() {
+        let text = """
+        合租•龙湖时代天街-01卧
+        地址：上海市浦东新区申江路 500 号
+        ¥3330/月
+        """
+
+        let draft = ListingImportParser.parse(text: text)
+
+        XCTAssertEqual(draft.name, "龙湖时代天街-01卧")
+        XCTAssertEqual(draft.address, "上海市浦东新区申江路 500 号")
     }
 
     func testHTMLMetadataKeepsSourceAndImageCandidates() throws {
@@ -82,5 +134,62 @@ final class ListingImportTests: XCTestCase {
         XCTAssertTrue(store.state.options.first { $0.id == optionID }?.sourceRefs.contains(draft.sourceURL!.absoluteString) == true)
         XCTAssertTrue(store.state.evidence.contains { $0.optionID == optionID && $0.type == .listing && $0.sourceURL == draft.sourceURL!.absoluteString })
         XCTAssertNotNil(savedState)
+    }
+
+    @MainActor
+    func testScreenshotImportKeepsCoverAndOriginalEvidenceSeparate() throws {
+        let store = AppStore(
+            persistence: .init(loadV2: { nil }, loadV1: { nil }, saveV2: { _ in }),
+            useFixtures: true
+        )
+        var draft = ListingImportDraft()
+        draft.name = "带裁切封面的房源"
+        draft.photoIDs = ["cover-photo"]
+        draft.sourceScreenshotIDs = ["original-screenshot"]
+
+        let optionID = store.captureImportedOption(draft: draft)
+        let evidence = store.state.evidence.filter { $0.optionID == optionID }
+        let listing = try XCTUnwrap(store.task.listings.first { $0.id == optionID })
+
+        XCTAssertTrue(evidence.contains { $0.type == .photo && $0.mediaID == "cover-photo" })
+        XCTAssertTrue(evidence.contains { $0.type == .screenshot && $0.mediaID == "original-screenshot" })
+        XCTAssertEqual(listing.photoIDs, ["cover-photo"])
+    }
+
+    func testCoverCropProducesSixteenByNineImage() throws {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 400, height: 800), format: format).image { context in
+            UIColor.systemBlue.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 400, height: 800))
+        }
+
+        let cropped = try XCTUnwrap(ListingCoverCropper.croppedImage(from: image, selection: .default))
+        let cgImage = try XCTUnwrap(cropped.cgImage)
+
+        XCTAssertEqual(cgImage.width, 400)
+        XCTAssertEqual(cgImage.height, 225)
+        XCTAssertEqual(Double(cgImage.width) / Double(cgImage.height), 16.0 / 9.0, accuracy: 0.01)
+    }
+
+    func testAutomaticCoverUsesRoomRegionBetweenNavigationAndListingText() {
+        let lines = [
+            RecognizedListingLine(text: "VR 视频 图片 评价", boundingBox: CGRect(x: 0.1, y: 0.87, width: 0.5, height: 0.03)),
+            RecognizedListingLine(text: "必看好房｜严选好房", boundingBox: CGRect(x: 0.05, y: 0.48, width: 0.7, height: 0.03)),
+            RecognizedListingLine(text: "合租•龙湖时代天街-01卧", boundingBox: CGRect(x: 0.05, y: 0.38, width: 0.8, height: 0.03))
+        ]
+
+        let selection = ListingCoverCropper.automaticSelection(
+            imageSize: CGSize(width: 400, height: 800),
+            lines: lines
+        )
+        let cropRect = ListingCoverCropper.normalizedCropRect(
+            imageSize: CGSize(width: 400, height: 800),
+            selection: selection
+        )
+
+        XCTAssertGreaterThan(cropRect.minY, 0.13)
+        XCTAssertLessThan(cropRect.maxY, 0.49)
+        XCTAssertEqual(cropRect.width / cropRect.height, 16.0 / 9.0 / 0.5, accuracy: 0.01)
     }
 }
