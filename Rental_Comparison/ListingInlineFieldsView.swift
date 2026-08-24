@@ -1,11 +1,7 @@
-import PhotosUI
 import SwiftUI
-import UIKit
 
 struct ListingInlineFieldsView: View {
     @Binding var listing: Listing
-    @State private var selectedPhotos: [PhotosPickerItem] = []
-    @State private var photoError: String?
 
     var body: some View {
         Group {
@@ -27,18 +23,6 @@ struct ListingInlineFieldsView: View {
                 }
                 PersistentFormField("居室数") {
                     TextField("例如：3", value: optionalIntBinding(\.roomCount, fallback: 1), format: .number).keyboardType(.numberPad)
-                }
-            }
-
-            Section("照片") {
-                PhotosPicker(selection: $selectedPhotos, maxSelectionCount: 8, matching: .images) {
-                    Label(listing.photoIDs.isEmpty ? "添加照片" : "已添加 \(listing.photoIDs.count) 张", systemImage: "photo.on.rectangle.angled")
-                }
-                if !listing.photoIDs.isEmpty {
-                    Button("移除照片", role: .destructive) {
-                        PersistenceClient.deleteMedia(listing.photoIDs)
-                        listing.photoIDs.removeAll()
-                    }
                 }
             }
 
@@ -102,10 +86,6 @@ struct ListingInlineFieldsView: View {
                 }
             }
         }
-        .onChange(of: selectedPhotos) { _, items in Task { await importPhotos(items) } }
-        .alert("无法读取照片", isPresented: Binding(get: { photoError != nil }, set: { if !$0 { photoError = nil } })) {
-            Button("好", role: .cancel) {}
-        } message: { Text(photoError ?? "") }
     }
 
     private func optionalStringBinding(_ keyPath: WritableKeyPath<Listing, String?>, fallback: String = "") -> Binding<String> {
@@ -116,18 +96,6 @@ struct ListingInlineFieldsView: View {
         Binding(get: { listing[keyPath: keyPath] ?? fallback }, set: { listing[keyPath: keyPath] = $0 })
     }
 
-    @MainActor
-    private func importPhotos(_ items: [PhotosPickerItem]) async {
-        do {
-            for item in items {
-                guard let data = try await item.loadTransferable(type: Data.self) else { continue }
-                listing.photoIDs.append(try PersistenceClient.saveMedia(data))
-            }
-            selectedPhotos.removeAll()
-        } catch {
-            photoError = error.localizedDescription
-        }
-    }
 }
 
 #Preview {

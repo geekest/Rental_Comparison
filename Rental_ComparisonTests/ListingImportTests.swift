@@ -153,7 +153,11 @@ final class ListingImportTests: XCTestCase {
 
         XCTAssertTrue(evidence.contains { $0.type == .photo && $0.mediaID == "cover-photo" })
         XCTAssertTrue(evidence.contains { $0.type == .screenshot && $0.mediaID == "original-screenshot" })
-        XCTAssertEqual(listing.photoIDs, ["cover-photo"])
+        XCTAssertEqual(listing.photoIDs, ["cover-photo", "original-screenshot"])
+
+        let originalEvidenceID = try XCTUnwrap(evidence.first { $0.mediaID == "original-screenshot" }?.id)
+        store.setPrimaryListingMedia(originalEvidenceID, for: optionID)
+        XCTAssertEqual(store.task.listings.first { $0.id == optionID }?.photoIDs, ["original-screenshot", "cover-photo"])
     }
 
     func testCoverCropProducesSixteenByNineImage() throws {

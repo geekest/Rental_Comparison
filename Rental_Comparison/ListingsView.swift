@@ -344,6 +344,7 @@ struct ListingDetailView: View {
     @State private var eliminationReason = ""
     @State private var showingAddUnknown = false
     @State private var unknownReason = ""
+    @State private var showingMediaManager = false
 
     private var listing: Listing? { store.task.listings.first { $0.id == listingID } }
 
@@ -351,8 +352,7 @@ struct ListingDetailView: View {
         Group {
             if let listing {
                 List {
-                    ListingImageView(listing: listing)
-                        .frame(height: 240)
+                    ListingMediaHeaderView(optionID: listing.id, listingName: listing.name)
                         .listRowInsets(EdgeInsets())
                     ListingInlineFieldsView(listing: listingBinding)
                     blockerSection
@@ -363,6 +363,17 @@ struct ListingDetailView: View {
                     eliminationSection(for: listing)
                 }
                 .navigationTitle(listing.name)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("管理图片", systemImage: "photo.on.rectangle.angled") {
+                            showingMediaManager = true
+                        }
+                        .accessibilityIdentifier("manageListingMediaButton")
+                    }
+                }
+                .sheet(isPresented: $showingMediaManager) {
+                    ListingMediaManagerView(optionID: listing.id)
+                }
                 .alert("淘汰这套房源？", isPresented: $showingEliminate) {
                     TextField("例如：通勤时间过长", text: $eliminationReason)
                     Button("取消", role: .cancel) {}

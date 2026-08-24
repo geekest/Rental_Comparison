@@ -1,13 +1,9 @@
-import PhotosUI
 import SwiftUI
-import UIKit
 
 struct ListingEditorView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var draft: Listing
-    @State private var selectedPhotos: [PhotosPickerItem] = []
-    @State private var photoError: String?
 
     private let isNew: Bool
 
@@ -56,32 +52,6 @@ struct ListingEditorView: View {
                             .textInputAutocapitalization(.characters)
                     }
                     Stepper("居室数：\(draft.roomCount ?? 1)", value: optionalIntBinding(\Listing.roomCount, fallback: 1), in: 1...20)
-                }
-
-                Section("房源照片") {
-                    PhotosPicker(selection: $selectedPhotos, maxSelectionCount: 8, matching: .images) {
-                        Label(draft.photoIDs.isEmpty ? "选择照片" : "已选择 \(draft.photoIDs.count) 张", systemImage: "photo.on.rectangle.angled")
-                    }
-                    if !draft.photoIDs.isEmpty {
-                        ScrollView(.horizontal) {
-                            HStack {
-                                ForEach(draft.photoIDs, id: \.self) { id in
-                                    if let url = PersistenceClient.mediaURL(for: id),
-                                       let image = UIImage(contentsOfFile: url.path) {
-                                        Image(uiImage: image)
-                                            .resizable()
-                                            .scaledToFill()
-                                            .frame(width: 96, height: 72)
-                                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    }
-                                }
-                            }
-                        }
-                        Button("移除所选照片", role: .destructive) {
-                            PersistenceClient.deleteMedia(draft.photoIDs)
-                            draft.photoIDs.removeAll()
-                        }
-                    }
                 }
 
                 Section("位置与空间") {
@@ -171,28 +141,6 @@ struct ListingEditorView: View {
                 if isNew && draft.city.isEmpty { draft.city = store.task.city }
                 if isNew { draft.currency = store.task.currency }
             }
-            .onChange(of: selectedPhotos) { _, items in
-                Task { await importPhotos(items) }
-            }
-            .alert("无法读取照片", isPresented: Binding(
-                get: { photoError != nil },
-                set: { if !$0 { photoError = nil } }
-            )) { Button("好", role: .cancel) {} } message: { Text(photoError ?? "") }
-        }
-    }
-
-    @MainActor
-    private func importPhotos(_ items: [PhotosPickerItem]) async {
-        do {
-            var ids: [String] = []
-            for item in items {
-                guard let data = try await item.loadTransferable(type: Data.self) else { continue }
-                ids.append(try PersistenceClient.saveMedia(data))
-            }
-            draft.photoIDs.append(contentsOf: ids)
-            selectedPhotos.removeAll()
-        } catch {
-            photoError = error.localizedDescription
         }
     }
 

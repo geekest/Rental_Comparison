@@ -87,6 +87,7 @@ Hunt 保存默认 ISO 4217 货币；界面使用系统 Locale。不同货币禁�
 - v1 `RentalTask` 映射为 Hunt，`Listing` 映射为 Option，`ConditionDefinition` 映射为 Criterion，`CostItem` 映射为费用 Fact，`InspectionItem` 映射为 VerificationTask 与 Evidence。
 - 既有手动录入的值迁移为 `user_confirmed`，不得升级为 `observed`。
 - `unchecked / okay / issue` 分别映射为 `pending / verified / issue`；旧 note 与 photoIDs 转为 Evidence。
+- Option 可选保存 `primaryEvidenceID` 作为房源卡片与详情头图的主图；旧工作区缺少该字段时按既有 Evidence 顺序回退。
 - 迁移必须保留原 v1 文件，先原子写入 v2 成功后再切换。失败时继续读取 v1、报告可恢复错误且不清空数据。迁移重复执行必须幂等。
 
 ## 验收

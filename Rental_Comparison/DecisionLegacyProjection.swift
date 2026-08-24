@@ -64,10 +64,20 @@ enum DecisionLegacyProjection {
         }
         let bundledImageName = evidence.first(where: { $0.bundledAssetName != nil })?.bundledAssetName
         let taskEvidenceIDs = Set(tasks.flatMap(\.evidenceIDs))
-        let listingEvidence = evidence.filter { !taskEvidenceIDs.contains($0.id) }
-        let coverPhotoIDs = listingEvidence.filter { $0.type == .photo }.compactMap(\.mediaID)
-        let screenshotIDs = listingEvidence.filter { $0.type == .screenshot }.compactMap(\.mediaID)
-        let photoIDs = coverPhotoIDs.isEmpty ? screenshotIDs : coverPhotoIDs
+        let evidenceByID = Dictionary(uniqueKeysWithValues: evidence.map { ($0.id, $0) })
+        let listingMedia = option.evidenceIDs.compactMap { evidenceID -> Evidence? in
+            guard !taskEvidenceIDs.contains(evidenceID),
+                  let evidence = evidenceByID[evidenceID],
+                  evidence.type == .photo || evidence.type == .screenshot else { return nil }
+            return evidence
+        }
+        let primaryMedia = option.primaryEvidenceID.flatMap { primaryID in
+            listingMedia.first(where: { $0.id == primaryID })
+        }
+        let orderedMedia = primaryMedia.map { primary in
+            [primary] + listingMedia.filter { $0.id != primary.id }
+        } ?? listingMedia
+        let photoIDs = orderedMedia.compactMap(\.mediaID)
 
         return .init(
             id: option.id,

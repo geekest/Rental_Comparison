@@ -46,4 +46,26 @@ final class QuickCaptureTests: XCTestCase {
         })
         XCTAssertEqual(store.task.listings.first { $0.id == optionID }?.photoIDs, ["capture-screenshot"])
     }
+
+    func testListingMediaCanAddSelectPrimaryAndRemove() throws {
+        let store = AppStore(persistence: .init(loadV2: { nil }, loadV1: { nil }, saveV2: { _ in }), useFixtures: true)
+        let optionID = try XCTUnwrap(store.state.options.first?.id)
+
+        try store.addListingMedia([Data("first-photo".utf8), Data("second-photo".utf8)], to: optionID)
+        let addedMedia = store.listingMedia(for: optionID)
+        XCTAssertGreaterThanOrEqual(addedMedia.count, 2)
+        let firstAdded = try XCTUnwrap(addedMedia.first { $0.mediaID != "" })
+        let secondAdded = try XCTUnwrap(addedMedia.last)
+
+        store.setPrimaryListingMedia(secondAdded.evidenceID, for: optionID)
+        XCTAssertEqual(store.listingMedia(for: optionID).first?.evidenceID, secondAdded.evidenceID)
+
+        let removedURL = try XCTUnwrap(PersistenceClient.mediaURL(for: firstAdded.mediaID))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: removedURL.path))
+        store.removeListingMedia(firstAdded.evidenceID, from: optionID)
+
+        XCTAssertFalse(store.listingMedia(for: optionID).contains { $0.evidenceID == firstAdded.evidenceID })
+        XCTAssertFalse(store.state.evidence.contains { $0.id == firstAdded.evidenceID })
+        XCTAssertFalse(FileManager.default.fileExists(atPath: removedURL.path))
+    }
 }

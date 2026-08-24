@@ -73,9 +73,8 @@ final class RentalComparisonUITests: XCTestCase {
         XCTAssertTrue(card.waitForExistence(timeout: 5))
         app.buttons["listingDetailButton_\(listingID)"].tap()
         XCTAssertTrue(app.navigationBars["徐汇 · 一室一厅"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.textFields["房源名称"].exists)
         let scheduleButton = app.buttons["scheduleViewingButton"]
-        for _ in 0..<4 where !scheduleButton.isHittable {
+        for _ in 0..<8 where !scheduleButton.isHittable {
             app.swipeUp()
         }
         XCTAssertTrue(scheduleButton.isHittable)
@@ -87,5 +86,18 @@ final class RentalComparisonUITests: XCTestCase {
 
         XCTAssertTrue(app.buttons["正常"].firstMatch.waitForExistence(timeout: 5))
         app.buttons["正常"].firstMatch.tap()
+    }
+
+    func testListingDetailProvidesTopLevelPhotoManagement() {
+        let listingID = "11111111-1111-1111-1111-111111111111"
+
+        XCTAssertTrue(app.otherElements["listingCard_\(listingID)"].waitForExistence(timeout: 5))
+        app.buttons["listingDetailButton_\(listingID)"].tap()
+
+        XCTAssertTrue(app.navigationBars["徐汇 · 一室一厅"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["manageListingMediaButton"].waitForExistence(timeout: 5))
+
+        app.buttons["manageListingMediaButton"].tap()
+        XCTAssertTrue(app.navigationBars["管理图片"].waitForExistence(timeout: 5))
     }
 }

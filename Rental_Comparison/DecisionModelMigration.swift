@@ -167,6 +167,16 @@ enum DecisionModelMigration {
             merged.options[index].factIDs = merged.facts.filter { $0.optionID == optionID }.map(\.id)
             merged.options[index].evidenceIDs = merged.evidence.filter { $0.optionID == optionID }.map(\.id)
             merged.options[index].verificationTaskIDs = merged.verificationTasks.filter { $0.optionID == optionID }.map(\.id)
+            if let primaryEvidence = current.options.first(where: { $0.id == optionID })?.primaryEvidenceID,
+               let currentEvidence = current.evidence.first(where: { $0.id == primaryEvidence }) {
+                merged.options[index].primaryEvidenceID = merged.evidence.first(where: {
+                    $0.id == primaryEvidence || (
+                        $0.optionID == optionID &&
+                        $0.type == currentEvidence.type &&
+                        $0.mediaID == currentEvidence.mediaID
+                    )
+                })?.id
+            }
         }
         return merged
     }
