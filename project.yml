@@ -15,9 +15,10 @@ targets:
     platform: iOS
     sources:
       - path: Rental_Comparison
+    resources:
+      - path: Rental_Comparison/Resources
       - path: web_version/public/assets/listings
         type: folder
-        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.geekest.RentalComparison

@@ -251,18 +251,53 @@ struct DecisionPreferences: Codable, Hashable {
     var defaultCurrency = "CNY"
     var defaultExpectedStayMonths = 12
     var showEliminatedOptions = true
+
+    private enum CodingKeys: String, CodingKey {
+        case language
+        case defaultCurrency
+        case defaultExpectedStayMonths
+        case showEliminatedOptions
+    }
+
+    init(
+        language: AppLanguage = .simplifiedChinese,
+        defaultCurrency: String = "CNY",
+        defaultExpectedStayMonths: Int = 12,
+        showEliminatedOptions: Bool = true
+    ) {
+        self.language = language
+        self.defaultCurrency = defaultCurrency
+        self.defaultExpectedStayMonths = defaultExpectedStayMonths
+        self.showEliminatedOptions = showEliminatedOptions
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        language = try container.decodeIfPresent(AppLanguage.self, forKey: .language) ?? .simplifiedChinese
+        defaultCurrency = try container.decodeIfPresent(String.self, forKey: .defaultCurrency) ?? "CNY"
+        defaultExpectedStayMonths = try container.decodeIfPresent(Int.self, forKey: .defaultExpectedStayMonths) ?? 12
+        showEliminatedOptions = try container.decodeIfPresent(Bool.self, forKey: .showEliminatedOptions) ?? true
+    }
 }
 
 enum AppLanguage: String, Codable, CaseIterable, Identifiable {
     case simplifiedChinese = "zh-Hans"
     case english = "en"
+    case japanese = "ja"
+    case traditionalChinese = "zh-Hant"
 
     var id: Self { self }
+
+    var locale: Locale {
+        Locale(identifier: rawValue)
+    }
 
     var displayName: String {
         switch self {
         case .simplifiedChinese: "简体中文"
         case .english: "English"
+        case .japanese: "日本語"
+        case .traditionalChinese: "繁體中文"
         }
     }
 }

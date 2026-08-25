@@ -8,6 +8,7 @@ struct RentalComparisonApp: App {
         WindowGroup {
             RootView()
                 .environment(store)
+                .environment(\.locale, store.preferences.language.locale)
                 .tint(.blue)
         }
     }

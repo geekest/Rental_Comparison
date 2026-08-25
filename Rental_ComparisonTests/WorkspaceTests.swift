@@ -32,13 +32,29 @@ final class WorkspaceTests: XCTestCase {
         let store = AppStore(persistence: client, useFixtures: true)
 
         store.updatePreferences {
-            $0.language = .english
+            $0.language = .japanese
             $0.defaultCurrency = "HKD"
             $0.defaultExpectedStayMonths = 18
         }
 
-        XCTAssertEqual(savedWorkspace?.preferences.language, .english)
+        XCTAssertEqual(savedWorkspace?.preferences.language, .japanese)
         XCTAssertEqual(savedWorkspace?.preferences.defaultCurrency, "HKD")
         XCTAssertEqual(savedWorkspace?.preferences.defaultExpectedStayMonths, 18)
+    }
+
+    func testSupportedLanguagesExposeStableLocales() {
+        XCTAssertEqual(AppLanguage.allCases.map(\.rawValue), ["zh-Hans", "en", "ja", "zh-Hant"])
+        XCTAssertEqual(AppLanguage.japanese.locale.identifier, "ja")
+        XCTAssertEqual(AppLanguage.traditionalChinese.locale.identifier, "zh-Hant")
+    }
+
+    func testPreferencesDecodeOldWorkspaceWithoutLanguage() throws {
+        let data = #"{"defaultCurrency":"HKD","defaultExpectedStayMonths":18,"showEliminatedOptions":false}"#.data(using: .utf8)!
+        let preferences = try JSONDecoder().decode(DecisionPreferences.self, from: data)
+
+        XCTAssertEqual(preferences.language, .simplifiedChinese)
+        XCTAssertEqual(preferences.defaultCurrency, "HKD")
+        XCTAssertEqual(preferences.defaultExpectedStayMonths, 18)
+        XCTAssertFalse(preferences.showEliminatedOptions)
     }
 }

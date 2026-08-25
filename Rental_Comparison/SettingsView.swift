@@ -13,7 +13,7 @@ struct SettingsView: View {
                 }
                 .accessibilityIdentifier("languagePicker")
 
-                Picker("货币单位", selection: preferenceBinding(\.defaultCurrency)) {
+                Picker("默认货币", selection: preferenceBinding(\.defaultCurrency)) {
                     Text("人民币（CNY）").tag("CNY")
                     Text("港币（HKD）").tag("HKD")
                     Text("美元（USD）").tag("USD")
