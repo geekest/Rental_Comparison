@@ -61,6 +61,7 @@ private struct ComparisonScrollResolver: UIViewRepresentable {
 
 private final class ComparisonScrollResolverView: UIView {
     var resolve: ((UIScrollView) -> Void)?
+    private var resolutionScheduled = false
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -75,16 +76,34 @@ private final class ComparisonScrollResolverView: UIView {
 
     override func didMoveToWindow() {
         super.didMoveToWindow()
-        guard window != nil else { return }
+        resolveScrollViewIfNeeded()
+    }
 
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        resolveScrollViewIfNeeded()
+    }
+
+    private func resolveScrollViewIfNeeded() {
+        guard window != nil, !resolutionScheduled else { return }
+        resolutionScheduled = true
         DispatchQueue.main.async { [weak self] in
-            var ancestor = self?.superview
+            guard let self else { return }
+            self.resolutionScheduled = false
+            var ancestor = self.superview
+            var fallback: UIScrollView?
             while let view = ancestor {
                 if let scrollView = view as? UIScrollView {
-                    self?.resolve?(scrollView)
-                    return
+                    fallback = fallback ?? scrollView
+                    if scrollView.contentSize.width > scrollView.bounds.width + 1 {
+                        self.resolve?(scrollView)
+                        return
+                    }
                 }
                 ancestor = view.superview
+            }
+            if let fallback {
+                self.resolve?(fallback)
             }
         }
     }
@@ -285,6 +304,7 @@ private struct ComparisonHeader: View {
                                 .font(.subheadline)
                         }
                     }
+                    .padding(.horizontal, ComparisonLayout.columnContentInset)
                     .frame(width: ComparisonLayout.columnWidth, alignment: .leading)
                 }
             }

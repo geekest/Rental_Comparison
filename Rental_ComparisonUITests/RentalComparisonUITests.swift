@@ -61,6 +61,9 @@ final class RentalComparisonUITests: XCTestCase {
         XCTAssertTrue(costValue.waitForExistence(timeout: 3))
         XCTAssertTrue(commuteMetric.waitForExistence(timeout: 3))
 
+        let header = app.staticTexts["comparisonHeader-11111111-1111-1111-1111-111111111111"]
+        XCTAssertTrue(header.waitForExistence(timeout: 3))
+        let initialHeaderX = header.frame.minX
         let initialX = commuteMetric.frame.minX
         for _ in 0..<3 where !costValue.isHittable {
             app.swipeUp()
@@ -75,6 +78,12 @@ final class RentalComparisonUITests: XCTestCase {
         }
         XCTAssertTrue(commuteMetric.waitForExistence(timeout: 3))
         XCTAssertLessThan(commuteMetric.frame.minX, initialX)
+        XCTAssertLessThan(header.frame.minX, initialHeaderX)
+        XCTAssertEqual(
+            header.frame.minX - initialHeaderX,
+            commuteMetric.frame.minX - initialX,
+            accuracy: 2
+        )
     }
 
     func testComparisonDetailsCanCollapseAndExpand() {
