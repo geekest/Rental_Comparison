@@ -86,6 +86,45 @@ final class RentalComparisonUITests: XCTestCase {
         )
     }
 
+    func testComparisonDetailsKeepAllSectionsOnTheSameColumn() {
+        app.terminate()
+        app.launchArguments = ["-uiTesting", "-startComparison", "-comparisonThreeListings"]
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["比较房源"].waitForExistence(timeout: 5))
+        let firstCostCell = app.staticTexts["¥9,250"]
+        let thirdCostCell = app.staticTexts["¥7,180"]
+        let thirdHeader = app.staticTexts["comparisonHeader-33333333-3333-3333-3333-333333333333"]
+        XCTAssertTrue(firstCostCell.waitForExistence(timeout: 3))
+        XCTAssertTrue(firstCostCell.isHittable)
+        XCTAssertTrue(thirdCostCell.exists)
+        XCTAssertTrue(thirdHeader.exists)
+        let initialCostX = thirdCostCell.frame.minX
+        let initialHeaderX = thirdHeader.frame.minX
+
+        let thirdCommuteCell = app.staticTexts["46 分钟"]
+        let thirdConditionCell = app.staticTexts["单程通勤不超过 40 分钟"]
+        let inspectionCell = app.staticTexts
+            .matching(NSPredicate(format: "label == %@", "无已记录异常"))
+            .element(boundBy: 1)
+        let detailCells = [thirdCommuteCell, thirdConditionCell, inspectionCell]
+        XCTAssertTrue(thirdCommuteCell.waitForExistence(timeout: 3), "第三套房源的通勤列应存在")
+        XCTAssertTrue(thirdConditionCell.waitForExistence(timeout: 3), "第三套房源的条件风险列应存在")
+        XCTAssertTrue(inspectionCell.waitForExistence(timeout: 3), "看房记录列应存在")
+        let initialDetailXs = detailCells.map(\.frame.minX)
+
+        let dragStart = firstCostCell.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5))
+        let dragEnd = firstCostCell.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5))
+        dragStart.press(forDuration: 0.1, thenDragTo: dragEnd, withVelocity: .fast, thenHoldForDuration: 0.1)
+        XCTAssertLessThan(thirdCostCell.frame.minX, initialCostX)
+
+        let costDelta = thirdCostCell.frame.minX - initialCostX
+        XCTAssertEqual(thirdHeader.frame.minX - initialHeaderX, costDelta, accuracy: 2)
+        for (cell, initialX) in zip(detailCells, initialDetailXs) {
+            XCTAssertEqual(cell.frame.minX - initialX, costDelta, accuracy: 2)
+        }
+    }
+
     func testComparisonDetailsCanCollapseAndExpand() {
         app.terminate()
         app.launchArguments = ["-uiTesting", "-startComparison"]

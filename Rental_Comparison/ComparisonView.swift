@@ -1,120 +1,16 @@
 import SwiftUI
 
-private final class ComparisonScrollCoordinator {
-    private final class WeakScrollView {
-        weak var value: UIScrollView?
-
-        init(_ value: UIScrollView) {
-            self.value = value
-        }
-    }
-
-    private var scrollViews: [ObjectIdentifier: WeakScrollView] = [:]
-    private var observations: [ObjectIdentifier: NSKeyValueObservation] = [:]
-    private var isSynchronizing = false
-
-    func register(_ scrollView: UIScrollView) {
-        let id = ObjectIdentifier(scrollView)
-        guard observations[id] == nil else { return }
-
-        scrollViews[id] = WeakScrollView(scrollView)
-        observations[id] = scrollView.observe(\UIScrollView.contentOffset, options: [.new]) { [weak self, weak scrollView] _, _ in
-            guard let scrollView else { return }
-            self?.synchronize(from: scrollView)
-        }
-    }
-
-    private func synchronize(from source: UIScrollView) {
-        guard !isSynchronizing else { return }
-        isSynchronizing = true
-        defer { isSynchronizing = false }
-
-        let sourceOffset = source.contentOffset.x
-        scrollViews = scrollViews.filter { $0.value.value != nil }
-        for (id, weakScrollView) in scrollViews {
-            guard let target = weakScrollView.value, id != ObjectIdentifier(source) else { continue }
-            let minimumX = -target.adjustedContentInset.left
-            let maximumX = max(minimumX, target.contentSize.width - target.bounds.width + target.adjustedContentInset.right)
-            let targetX = min(max(sourceOffset, minimumX), maximumX)
-            guard abs(target.contentOffset.x - targetX) > 0.5 else { continue }
-
-            var targetOffset = target.contentOffset
-            targetOffset.x = targetX
-            target.setContentOffset(targetOffset, animated: false)
-        }
-    }
-}
-
-private struct ComparisonScrollResolver: UIViewRepresentable {
-    let coordinator: ComparisonScrollCoordinator
-
-    func makeUIView(context: Context) -> ComparisonScrollResolverView {
-        let view = ComparisonScrollResolverView()
-        view.resolve = { [coordinator] scrollView in
-            coordinator.register(scrollView)
-        }
-        return view
-    }
-
-    func updateUIView(_ uiView: ComparisonScrollResolverView, context: Context) {}
-}
-
-private final class ComparisonScrollResolverView: UIView {
-    var resolve: ((UIScrollView) -> Void)?
-    private var resolutionScheduled = false
-
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        isUserInteractionEnabled = false
-        backgroundColor = .clear
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func didMoveToWindow() {
-        super.didMoveToWindow()
-        resolveScrollViewIfNeeded()
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        resolveScrollViewIfNeeded()
-    }
-
-    private func resolveScrollViewIfNeeded() {
-        guard window != nil, !resolutionScheduled else { return }
-        resolutionScheduled = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            self.resolutionScheduled = false
-            var ancestor = self.superview
-            var fallback: UIScrollView?
-            while let view = ancestor {
-                if let scrollView = view as? UIScrollView {
-                    fallback = fallback ?? scrollView
-                    if scrollView.contentSize.width > scrollView.bounds.width + 1 {
-                        self.resolve?(scrollView)
-                        return
-                    }
-                }
-                ancestor = view.superview
-            }
-            if let fallback {
-                self.resolve?(fallback)
-            }
-        }
-    }
-}
-
 private enum ComparisonLayout {
     static let columnWidth: CGFloat = 180
     static let columnSpacing: CGFloat = 16
-    static let columnContentInset: CGFloat = 16
     static let sectionHorizontalInset: CGFloat = 24
     static let titleContentSpacing: CGFloat = 16
+
+    static func contentWidth(for listingCount: Int) -> CGFloat {
+        let columns = CGFloat(listingCount) * columnWidth
+        let spacing = CGFloat(max(listingCount - 1, 0)) * columnSpacing
+        return columns + spacing + sectionHorizontalInset * 2
+    }
 }
 
 struct ComparisonView: View {
@@ -123,9 +19,9 @@ struct ComparisonView: View {
     @State private var showingFinal = false
     @State private var showingAnalysis = true
     @State private var showingFullMatrix = true
-    @State private var comparisonScrollCoordinator = ComparisonScrollCoordinator()
 
     private var listings: [Listing] { store.comparisonListings }
+    private var comparisonContentWidth: CGFloat { ComparisonLayout.contentWidth(for: listings.count) }
 
     var body: some View {
         Group {
@@ -139,15 +35,15 @@ struct ComparisonView: View {
                         .buttonStyle(.borderedProminent)
                 }
             } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 28) {
+                ScrollView(.horizontal) {
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 28) {
                         DisclosureGroup(isExpanded: $showingFullMatrix) {
                             VStack(alignment: .leading, spacing: 28) {
                                 ComparisonSection(
                                     title: "真实成本",
                                     subtitle: "月租与固定费用的月均支出",
-                                    symbol: "wallet.pass",
-                                    scrollCoordinator: comparisonScrollCoordinator
+                                    symbol: "wallet.pass"
                                 ) { listing in
                                     let summary = DecisionEngine.calculateCosts(for: listing, expectedMonths: store.task.expectedMonths)
                                     VStack(alignment: .leading, spacing: 8) {
@@ -162,8 +58,7 @@ struct ComparisonView: View {
                                 ComparisonSection(
                                     title: "通勤时间",
                                     subtitle: "前往 \(store.task.commuteDestination.isEmpty ? "主要目的地" : store.task.commuteDestination) 的单程记录",
-                                    symbol: "clock",
-                                    scrollCoordinator: comparisonScrollCoordinator
+                                    symbol: "clock"
                                 ) { listing in
                                     VStack(alignment: .leading, spacing: 8) {
                                         MetricValue(listing.commuteMinutes.map { "\($0) 分钟" } ?? "待补充", caption: listing.commuteMode?.title ?? "方式待补充")
@@ -176,8 +71,7 @@ struct ComparisonView: View {
                                 ComparisonSection(
                                     title: "条件风险",
                                     subtitle: "硬性冲突、未知项与普通偏好",
-                                    symbol: "checklist",
-                                    scrollCoordinator: comparisonScrollCoordinator
+                                    symbol: "checklist"
                                 ) { listing in
                                     VStack(alignment: .leading, spacing: 8) {
                                         let conflicts = DecisionEngine.requiredConflicts(in: store.task, listing: listing)
@@ -198,8 +92,7 @@ struct ComparisonView: View {
                                 ComparisonSection(
                                     title: "看房记录",
                                     subtitle: "已记录的现场异常",
-                                    symbol: "eye",
-                                    scrollCoordinator: comparisonScrollCoordinator
+                                    symbol: "eye"
                                 ) { listing in
                                     let issues = DecisionEngine.inspectionIssues(in: listing)
                                     VStack(alignment: .leading, spacing: 8) {
@@ -259,9 +152,19 @@ struct ComparisonView: View {
                             .padding(.horizontal)
                             .accessibilityIdentifier("confirmFinalButton")
                         }
+                        }
+                        .frame(width: comparisonContentWidth, alignment: .leading)
+                        .padding(.vertical)
                     }
-                    .padding(.vertical)
+                    .frame(width: comparisonContentWidth)
+                    .safeAreaInset(edge: .top, spacing: 0) {
+                        ComparisonHeader(listings: listings)
+                            .padding(.vertical, 8)
+                            .background(.background)
+                            .overlay(alignment: .bottom) { Divider() }
+                    }
                 }
+                .scrollIndicators(.hidden)
             }
         }
         .navigationTitle("比较房源")
@@ -269,49 +172,36 @@ struct ComparisonView: View {
         .toolbar { Button("调整") { showingManager = true } }
         .sheet(isPresented: $showingManager) { CompareManagerView() }
         .sheet(isPresented: $showingFinal) { FinalDecisionView() }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            if listings.count >= 2 {
-                ComparisonHeader(listings: listings, scrollCoordinator: comparisonScrollCoordinator)
-                    .padding(.vertical, 8)
-                    .background(.background)
-                    .overlay(alignment: .bottom) { Divider() }
-            }
-        }
         .accessibilityIdentifier("comparisonScreen")
     }
 }
+
 private struct ComparisonHeader: View {
     @Environment(AppStore.self) private var store
     let listings: [Listing]
-    let scrollCoordinator: ComparisonScrollCoordinator
 
     var body: some View {
-        ScrollView(.horizontal) {
-            HStack(alignment: .top, spacing: ComparisonLayout.columnSpacing) {
-                ForEach(listings) { listing in
-                    VStack(alignment: .leading, spacing: 8) {
-                        ListingImageView(listing: listing)
-                            .frame(width: ComparisonLayout.columnWidth, height: 120)
-                            .clipShape(RoundedRectangle(cornerRadius: 18))
-                        Text(listing.name)
-                            .font(.headline)
-                            .lineLimit(2)
-                            .accessibilityIdentifier("comparisonHeader-\(listing.id.uuidString)")
-                        if listing.id == store.task.baselineID {
-                            StatusPill(text: "比较基准", systemImage: "pin.fill", color: .blue)
-                        } else {
-                            Button("设为基准") { store.updateTask { $0.baselineID = listing.id } }
-                                .font(.subheadline)
-                        }
+        HStack(alignment: .top, spacing: ComparisonLayout.columnSpacing) {
+            ForEach(listings) { listing in
+                VStack(alignment: .leading, spacing: 8) {
+                    ListingImageView(listing: listing)
+                        .frame(width: ComparisonLayout.columnWidth, height: 120)
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                    Text(listing.name)
+                        .font(.headline)
+                        .lineLimit(2)
+                        .accessibilityIdentifier("comparisonHeader-\(listing.id.uuidString)")
+                    if listing.id == store.task.baselineID {
+                        StatusPill(text: "比较基准", systemImage: "pin.fill", color: .blue)
+                    } else {
+                        Button("设为基准") { store.updateTask { $0.baselineID = listing.id } }
+                            .font(.subheadline)
                     }
-                    .padding(.horizontal, ComparisonLayout.columnContentInset)
-                    .frame(width: ComparisonLayout.columnWidth, alignment: .leading)
                 }
             }
-            .background(ComparisonScrollResolver(coordinator: scrollCoordinator))
+            .frame(width: ComparisonLayout.columnWidth, alignment: .leading)
         }
         .padding(.horizontal, ComparisonLayout.sectionHorizontalInset)
-        .scrollIndicators(.hidden)
     }
 }
 
@@ -415,7 +305,6 @@ private struct ComparisonSection<Content: View>: View {
     let title: String
     let subtitle: String
     let symbol: String
-    let scrollCoordinator: ComparisonScrollCoordinator
     @ViewBuilder let content: (Listing) -> Content
     @Environment(AppStore.self) private var store
 
@@ -423,19 +312,14 @@ private struct ComparisonSection<Content: View>: View {
         VStack(alignment: .leading, spacing: 14) {
             Label(title, systemImage: symbol).font(.title2.bold())
             Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
-            ScrollView(.horizontal) {
-                HStack(alignment: .top, spacing: ComparisonLayout.columnSpacing) {
-                    ForEach(store.comparisonListings) { listing in
-                        content(listing)
-                            .padding(.horizontal, ComparisonLayout.columnContentInset)
-                            .frame(width: ComparisonLayout.columnWidth, alignment: .leading)
-                            .frame(maxHeight: .infinity, alignment: .top)
-                            .overlay(alignment: .trailing) { Divider() }
-                    }
-                    .background(ComparisonScrollResolver(coordinator: scrollCoordinator))
+            HStack(alignment: .top, spacing: ComparisonLayout.columnSpacing) {
+                ForEach(store.comparisonListings) { listing in
+                    content(listing)
+                        .frame(width: ComparisonLayout.columnWidth, alignment: .leading)
+                        .frame(maxHeight: .infinity, alignment: .top)
+                        .overlay(alignment: .trailing) { Divider() }
                 }
             }
-            .scrollIndicators(.hidden)
             .accessibilityIdentifier("comparisonSection-\(title)")
         }
     }

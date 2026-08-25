@@ -21,7 +21,11 @@ final class AppStore {
         var selectedTaskID: UUID?
         var loadedPreferences = DecisionPreferences()
         if useFixtures {
-            initialState = DecisionModelMigration.migrate(Fixtures.initialState)
+            var fixture = Fixtures.initialState
+            if ProcessInfo.processInfo.arguments.contains("-comparisonThreeListings") {
+                fixture.task.comparisonIDs = fixture.task.listings.map(\.id)
+            }
+            initialState = DecisionModelMigration.migrate(fixture)
             initialState.privacyAcknowledged = true
         } else {
             do {
