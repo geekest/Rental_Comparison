@@ -17,7 +17,7 @@ enum DecisionLegacyProjection {
                 facts: factsByOption[option.id] ?? [],
                 evidence: evidenceByOption[option.id] ?? [],
                 tasks: tasksByOption[option.id] ?? [],
-                city: hunt.city,
+                city: text(from: factsByOption[option.id]?.first(where: { $0.key == FactKey.city })?.value) ?? hunt.city,
                 currency: hunt.defaultCurrency,
                 criteria: criteria
             )
@@ -63,12 +63,26 @@ enum DecisionLegacyProjection {
             return .init(id: UUID(uuidString: fact.key.replacingOccurrences(of: FactKey.costPrefix, with: "")) ?? fact.id, name: value.name, amount: value.amount, cadence: value.cadence, refundable: value.refundable, confirmed: fact.verificationState != .unknown)
         }
         let bundledImageName = evidence.first(where: { $0.bundledAssetName != nil })?.bundledAssetName
-        let photoIDs = evidence.compactMap(\.mediaID)
+        let taskEvidenceIDs = Set(tasks.flatMap(\.evidenceIDs))
+        let evidenceByID = Dictionary(uniqueKeysWithValues: evidence.map { ($0.id, $0) })
+        let listingMedia = option.evidenceIDs.compactMap { evidenceID -> Evidence? in
+            guard !taskEvidenceIDs.contains(evidenceID),
+                  let evidence = evidenceByID[evidenceID],
+                  evidence.type == .photo || evidence.type == .screenshot else { return nil }
+            return evidence
+        }
+        let primaryMedia = option.primaryEvidenceID.flatMap { primaryID in
+            listingMedia.first(where: { $0.id == primaryID })
+        }
+        let orderedMedia = primaryMedia.map { primary in
+            [primary] + listingMedia.filter { $0.id != primary.id }
+        } ?? listingMedia
+        let photoIDs = orderedMedia.compactMap(\.mediaID)
 
         return .init(
             id: option.id,
             name: option.displayName,
-            city: city,
+            city: text(from: firstValue(for: FactKey.city)) ?? city,
             rentalType: rentalType(from: firstValue(for: FactKey.rentalType)),
             rent: decimal(from: firstValue(for: FactKey.monthlyRent)) ?? 0,
             currency: currency,

@@ -1,13 +1,9 @@
-import PhotosUI
 import SwiftUI
-import UIKit
 
 struct ListingEditorView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var draft: Listing
-    @State private var selectedPhotos: [PhotosPickerItem] = []
-    @State private var photoError: String?
 
     private let isNew: Bool
 
@@ -36,56 +32,46 @@ struct ListingEditorView: View {
         NavigationStack {
             Form {
                 Section("主要信息") {
-                    TextField("房源名称", text: $draft.name)
-                        .accessibilityIdentifier("listingNameField")
-                    TextField("城市", text: $draft.city)
+                    PersistentFormField("房源名称") {
+                        TextField("例如：龙湖时代天街 01 卧", text: $draft.name)
+                            .accessibilityIdentifier("listingNameField")
+                    }
+                    PersistentFormField("城市") {
+                        TextField("例如：上海", text: $draft.city)
+                    }
                     Picker("租赁方式", selection: $draft.rentalType) {
                         ForEach(RentalType.allCases) { Text($0.title).tag($0) }
                     }
-                    TextField("月租", value: $draft.rent, format: .number)
-                        .keyboardType(.decimalPad)
-                        .accessibilityIdentifier("listingRentField")
-                    TextField("货币", text: $draft.currency)
-                        .textInputAutocapitalization(.characters)
+                    PersistentFormField("月租") {
+                        TextField("例如：3330", value: $draft.rent, format: .number)
+                            .keyboardType(.decimalPad)
+                            .accessibilityIdentifier("listingRentField")
+                    }
+                    PersistentFormField("货币") {
+                        TextField("例如：CNY", text: $draft.currency)
+                            .textInputAutocapitalization(.characters)
+                    }
                     Stepper("居室数：\(draft.roomCount ?? 1)", value: optionalIntBinding(\Listing.roomCount, fallback: 1), in: 1...20)
                 }
 
-                Section("房源照片") {
-                    PhotosPicker(selection: $selectedPhotos, maxSelectionCount: 8, matching: .images) {
-                        Label(draft.photoIDs.isEmpty ? "选择照片" : "已选择 \(draft.photoIDs.count) 张", systemImage: "photo.on.rectangle.angled")
-                    }
-                    if !draft.photoIDs.isEmpty {
-                        ScrollView(.horizontal) {
-                            HStack {
-                                ForEach(draft.photoIDs, id: \.self) { id in
-                                    if let url = PersistenceClient.mediaURL(for: id),
-                                       let image = UIImage(contentsOfFile: url.path) {
-                                        Image(uiImage: image)
-                                            .resizable()
-                                            .scaledToFill()
-                                            .frame(width: 96, height: 72)
-                                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    }
-                                }
-                            }
-                        }
-                        Button("移除所选照片", role: .destructive) {
-                            PersistenceClient.deleteMedia(draft.photoIDs)
-                            draft.photoIDs.removeAll()
-                        }
-                    }
-                }
-
                 Section("位置与空间") {
-                    TextField("地址", text: optionalStringBinding(\Listing.address))
-                    TextField("面积（\(areaUnit)）", value: $draft.area, format: .number)
-                        .keyboardType(.decimalPad)
+                    PersistentFormField("地址") {
+                        TextField("例如：徐汇区龙华路 1 号", text: optionalStringBinding(\Listing.address))
+                    }
+                    PersistentFormField("面积（\(areaUnit)）") {
+                        TextField("例如：37.13", value: $draft.area, format: .number)
+                            .keyboardType(.decimalPad)
+                    }
                     Picker("面积范围", selection: optionalStringBinding(\Listing.areaScope, fallback: "整套")) {
                         Text("整套").tag("整套")
                         Text("私人空间").tag("私人空间")
                     }
-                    TextField("户型", text: optionalStringBinding(\Listing.layout))
-                    TextField("楼层", text: optionalStringBinding(\Listing.floor))
+                    PersistentFormField("户型") {
+                        TextField("例如：3 室 2 厅", text: optionalStringBinding(\Listing.layout))
+                    }
+                    PersistentFormField("楼层") {
+                        TextField("例如：20/26", text: optionalStringBinding(\Listing.floor))
+                    }
                     Picker("电梯", selection: optionalBoolBinding(\Listing.hasElevator)) {
                         Text("待补充").tag(Bool?.none)
                         Text("有").tag(Bool?.some(true))
@@ -98,18 +84,26 @@ struct ListingEditorView: View {
                         Text("待补充").tag(CommuteMode?.none)
                         ForEach(CommuteMode.allCases) { Text($0.title).tag(CommuteMode?.some($0)) }
                     }
-                    TextField("单程分钟", value: $draft.commuteMinutes, format: .number)
-                        .keyboardType(.numberPad)
-                    TextField("单次支出", value: $draft.commuteFare, format: .number)
-                        .keyboardType(.decimalPad)
+                    PersistentFormField("单程时间（分钟）") {
+                        TextField("例如：30", value: $draft.commuteMinutes, format: .number)
+                            .keyboardType(.numberPad)
+                    }
+                    PersistentFormField("单次支出") {
+                        TextField("例如：5", value: $draft.commuteFare, format: .number)
+                            .keyboardType(.decimalPad)
+                    }
                 }
 
                 Section("费用明细") {
                     ForEach($draft.costs) { $item in
                         DisclosureGroup {
-                            TextField("名称", text: $item.name)
-                            TextField("金额", value: $item.amount, format: .number)
-                                .keyboardType(.decimalPad)
+                            PersistentFormField("费用名称") {
+                                TextField("例如：物业费", text: $item.name)
+                            }
+                            PersistentFormField("金额") {
+                                TextField("例如：300", value: $item.amount, format: .number)
+                                    .keyboardType(.decimalPad)
+                            }
                             Picker("周期", selection: $item.cadence) {
                                 ForEach(CostCadence.allCases) { Text($0.title).tag($0) }
                             }
@@ -147,28 +141,6 @@ struct ListingEditorView: View {
                 if isNew && draft.city.isEmpty { draft.city = store.task.city }
                 if isNew { draft.currency = store.task.currency }
             }
-            .onChange(of: selectedPhotos) { _, items in
-                Task { await importPhotos(items) }
-            }
-            .alert("无法读取照片", isPresented: Binding(
-                get: { photoError != nil },
-                set: { if !$0 { photoError = nil } }
-            )) { Button("好", role: .cancel) {} } message: { Text(photoError ?? "") }
-        }
-    }
-
-    @MainActor
-    private func importPhotos(_ items: [PhotosPickerItem]) async {
-        do {
-            var ids: [String] = []
-            for item in items {
-                guard let data = try await item.loadTransferable(type: Data.self) else { continue }
-                ids.append(try PersistenceClient.saveMedia(data))
-            }
-            draft.photoIDs.append(contentsOf: ids)
-            selectedPhotos.removeAll()
-        } catch {
-            photoError = error.localizedDescription
         }
     }
 

@@ -4,7 +4,7 @@ struct ListingsView: View {
     @Environment(AppStore.self) private var store
     @Binding var showingTaskSettings: Bool
     let onSelectTab: (AppTab) -> Void
-    @State private var showingAdd = false
+    @State private var selectedAddRoute: AddListingRoute?
     @State private var limitMessage: String?
     @State private var selectedListingID: UUID?
 
@@ -32,7 +32,7 @@ struct ListingsView: View {
                 NextActionCard(action: NextActionEngine.nextAction(in: store.state)) { destination in
                     switch destination {
                     case .capture:
-                        showingAdd = true
+                        selectedAddRoute = .direct
                     case .compare, .finalDecision:
                         onSelectTab(.comparison)
                     case .verify:
@@ -116,14 +116,34 @@ struct ListingsView: View {
                     .labelStyle(.iconOnly)
             }
             ToolbarItem(placement: .primaryAction) {
-                Button { showingAdd = true } label: {
-                    WarmToolbarIcon(systemImage: "plus")
+                Menu {
+                    Button("直接录入", systemImage: "square.and.pencil") {
+                        selectedAddRoute = .direct
+                    }
+                    .accessibilityIdentifier("directListingButton")
+
+                    Button("链接导入", systemImage: "link") {
+                        selectedAddRoute = .link
+                    }
+                    .accessibilityIdentifier("linkImportButton")
+
+                    Button("截图识别", systemImage: "text.viewfinder") {
+                        selectedAddRoute = .screenshot
+                    }
+                    .accessibilityIdentifier("screenshotImportButton")
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(WarmDesign.ink)
+                        .frame(width: 44, height: 44)
                 }
-                    .accessibilityLabel("添加候选")
-                    .accessibilityIdentifier("addListingButton")
+                .accessibilityLabel("添加候选")
+                .accessibilityIdentifier("addListingButton")
             }
         }
-        .sheet(isPresented: $showingAdd) { QuickCaptureView() }
+        .sheet(item: $selectedAddRoute) { route in
+            AddListingFlowView(route: route)
+        }
         .alert("暂时无法加入对比", isPresented: Binding(
             get: { limitMessage != nil },
             set: { if !$0 { limitMessage = nil } }
@@ -179,17 +199,7 @@ private struct ListingCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            ZStack(alignment: .topTrailing) {
-                ListingImageView(listing: listing)
-                if listing.focused {
-                    StatusPill(text: "重点考虑", systemImage: "star.fill", color: WarmDesign.warning)
-                        .padding(12)
-                }
-            }
-            // 先锁定容器比例，再让图片 fill 并裁切，避免异常比例的原图撑高卡片。
-            .frame(maxWidth: .infinity)
-            .aspectRatio(16.0 / 9.0, contentMode: .fit)
-            .clipped()
+            ListingCardCover(listing: listing)
             VStack(alignment: .leading, spacing: 12) {
                 Text(listing.name)
                     .font(.system(.title2, design: .serif, weight: .bold))
@@ -217,21 +227,30 @@ private struct ListingCard: View {
                     }
                 }
                 HStack(spacing: 12) {
-                    if store.task.comparisonIDs.contains(listing.id) {
-                        Button("已加入对比") {}
-                            .frame(maxWidth: .infinity)
-                            .buttonStyle(.bordered)
-                            .tint(WarmDesign.moss)
-                            .disabled(true)
-                            .accessibilityIdentifier("comparisonButton_\(listing.id.uuidString)")
+                    let isCompared = store.task.comparisonIDs.contains(listing.id)
+                    if isCompared {
+                        Button {
+                            _ = store.toggleComparison(listing.id)
+                        } label: {
+                            Label("已加入对比", systemImage: "checkmark")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(WarmDesign.moss)
+                        .accessibilityValue("已选中，可点击取消")
+                        .accessibilityIdentifier("comparisonButton_\(listing.id.uuidString)")
                     } else {
                         Button {
-                            if !store.toggleComparison(listing.id) { limitMessage = "一次最多比较 5 套候选房源。" }
+                            if !store.toggleComparison(listing.id) {
+                                limitMessage = "一次最多比较 5 套候选房源。"
+                            }
                         } label: {
-                            Text("加入对比").frame(maxWidth: .infinity)
+                            Label("加入对比", systemImage: "plus")
+                                .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(WarmDesign.moss)
+                        .accessibilityValue("未选中，可点击加入")
                         .accessibilityIdentifier("comparisonButton_\(listing.id.uuidString)")
                     }
                     NavigationLink(value: listing.id) {
@@ -299,6 +318,48 @@ private struct ListingCard: View {
 
 }
 
+private struct ListingCardCover: View {
+    let listing: Listing
+
+    var body: some View {
+        // 由卡片先确定 16:9 图幅，再把原图按 fill 方式放入并裁切。
+        // 这样竖向截图不会依据自身尺寸撑高卡片，也不会覆盖卡片正文。
+        GeometryReader { proxy in
+            ZStack(alignment: .topTrailing) {
+                ListingImageView(listing: listing)
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                if listing.focused {
+                    ListingFocusBadge()
+                        .padding(12)
+                }
+            }
+        }
+        .aspectRatio(16.0 / 9.0, contentMode: .fit)
+        .clipped()
+    }
+}
+
+private struct ListingFocusBadge: View {
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "star.fill")
+                .foregroundStyle(.yellow)
+            Text("重点考虑")
+                .foregroundStyle(.white)
+        }
+        .font(.caption.weight(.bold))
+        .padding(.horizontal, 11)
+        .padding(.vertical, 7)
+        .background(.black.opacity(0.58), in: Capsule())
+        .overlay {
+            Capsule()
+                .stroke(.white.opacity(0.72), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+        .accessibilityLabel("重点考虑")
+    }
+}
+
 #Preview("选房") {
     NavigationStack {
         ListingsView(showingTaskSettings: .constant(false), onSelectTab: { _ in })
@@ -313,6 +374,7 @@ struct ListingDetailView: View {
     @State private var eliminationReason = ""
     @State private var showingAddUnknown = false
     @State private var unknownReason = ""
+    @State private var showingMediaManager = false
 
     private var listing: Listing? { store.task.listings.first { $0.id == listingID } }
 
@@ -320,8 +382,7 @@ struct ListingDetailView: View {
         Group {
             if let listing {
                 List {
-                    ListingImageView(listing: listing)
-                        .frame(height: 240)
+                    ListingMediaHeaderView(optionID: listing.id, listingName: listing.name)
                         .listRowInsets(EdgeInsets())
                     ListingInlineFieldsView(listing: listingBinding)
                     blockerSection
@@ -332,11 +393,22 @@ struct ListingDetailView: View {
                     eliminationSection(for: listing)
                 }
                 .navigationTitle(listing.name)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("管理图片", systemImage: "photo.on.rectangle.angled") {
+                            showingMediaManager = true
+                        }
+                        .accessibilityIdentifier("manageListingMediaButton")
+                    }
+                }
+                .sheet(isPresented: $showingMediaManager) {
+                    ListingMediaManagerView(optionID: listing.id)
+                }
                 .alert("淘汰这套房源？", isPresented: $showingEliminate) {
-                    TextField("原因（可选）", text: $eliminationReason)
+                    TextField("例如：通勤时间过长", text: $eliminationReason)
                     Button("取消", role: .cancel) {}
                     Button("淘汰", role: .destructive) { store.toggleEliminated(listing.id, reason: eliminationReason) }
-                } message: { Text("房源会退出当前对比，但可以随时恢复。") }
+                } message: { Text("可填写淘汰原因。房源会退出当前对比，但可以随时恢复。") }
                 .alert("添加待确认事项", isPresented: $showingAddUnknown) {
                     TextField("例如：确认夜间噪音", text: $unknownReason)
                     Button("取消", role: .cancel) { unknownReason = "" }

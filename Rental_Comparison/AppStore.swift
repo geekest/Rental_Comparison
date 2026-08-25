@@ -10,10 +10,12 @@ final class AppStore {
     private var taskStates: [DecisionAppState]
     private var currentTaskID: UUID
     private(set) var preferences: DecisionPreferences
+    private(set) var pendingImportURL: URL?
 
     init(persistence: DecisionPersistenceClient = .live, useFixtures: Bool = ProcessInfo.processInfo.arguments.contains("-uiTesting")) {
         self.persistence = persistence
         saveError = nil
+        pendingImportURL = nil
         var initialState: DecisionAppState
         var loadedStates: [DecisionAppState] = []
         var selectedTaskID: UUID?
@@ -59,6 +61,14 @@ final class AppStore {
     func acceptPrivacy() {
         state.privacyAcknowledged = true
         persist()
+    }
+
+    func receiveSharedURL(_ url: URL) {
+        pendingImportURL = url
+    }
+
+    func clearPendingImportURL() {
+        pendingImportURL = nil
     }
 
     func createTask(title: String, city: String, destination: String, expectedMonths: Int) {
@@ -164,6 +174,7 @@ final class AppStore {
             sourceRefs: [],
             factIDs: facts.map(\.id),
             evidenceIDs: evidence.map(\.id),
+            primaryEvidenceID: evidence.first?.id,
             verificationTaskIDs: [],
             createdAt: now,
             updatedAt: now
@@ -176,6 +187,152 @@ final class AppStore {
         refreshDecisionSupport(now: now)
         persist()
         return optionID
+    }
+
+    @discardableResult
+    func captureImportedOption(draft: ListingImportDraft) -> UUID {
+        let now = Date.now
+        let optionID = UUID()
+        let sourceURL = draft.sourceURL?.absoluteString
+        var evidence: [Evidence] = []
+        if let sourceURL {
+            evidence.append(.init(
+                id: UUID(), optionID: optionID, type: .listing, mediaID: nil,
+                bundledAssetName: nil, text: draft.sourceDescription.nilIfBlank,
+                sourceURL: sourceURL, capturedAt: now
+            ))
+        }
+        evidence += draft.photoIDs.map {
+            .init(
+                id: UUID(), optionID: optionID,
+                type: .photo,
+                mediaID: $0, bundledAssetName: nil, text: nil,
+                sourceURL: sourceURL, capturedAt: now
+            )
+        }
+        evidence += draft.sourceScreenshotIDs.map {
+            .init(
+                id: UUID(), optionID: optionID, type: .screenshot,
+                mediaID: $0, bundledAssetName: nil, text: nil,
+                sourceURL: sourceURL, capturedAt: now
+            )
+        }
+        let evidenceIDs = evidence.map(\.id)
+        var facts: [Fact] = []
+        func append(_ key: String, _ value: FactValue) {
+            facts.append(.init(
+                id: UUID(), optionID: optionID, key: key, value: value,
+                sourceType: draft.sourceType, sourceRef: sourceURL,
+                verificationState: .userConfirmed, evidenceIDs: evidenceIDs,
+                capturedAt: now, updatedAt: now
+            ))
+        }
+        if let city = draft.city.nilIfBlank { append(FactKey.city, .text(city)) }
+        if let monthlyRent = draft.monthlyRent, monthlyRent > 0 { append(FactKey.monthlyRent, .decimal(monthlyRent)) }
+        append(FactKey.rentalType, .text(draft.rentalType.rawValue))
+        if let address = draft.address?.nilIfBlank { append(FactKey.address, .text(address)) }
+        if let area = draft.area { append(FactKey.area, .decimal(area)) }
+        if let layout = draft.layout?.nilIfBlank { append(FactKey.layout, .text(layout)) }
+        if let roomCount = draft.roomCount { append(FactKey.bedroomCount, .decimal(Double(roomCount))) }
+        let option = Option(
+            id: optionID, huntID: state.hunt.id, displayName: draft.name.trimmingCharacters(in: .whitespacesAndNewlines),
+            searchStage: .saved, decisionState: .candidate, isFocused: false, eliminationReason: nil,
+            sourceRefs: sourceURL.map { [$0] } ?? [], factIDs: facts.map(\.id), evidenceIDs: evidenceIDs,
+            primaryEvidenceID: evidence.first(where: { $0.type == .photo && $0.mediaID != nil })?.id
+                ?? evidence.first(where: { $0.mediaID != nil })?.id,
+            verificationTaskIDs: [], createdAt: now, updatedAt: now
+        )
+        state.options.append(option)
+        state.facts.append(contentsOf: facts)
+        state.evidence.append(contentsOf: evidence)
+        state.hunt.optionIDs.append(optionID)
+        state.hunt.updatedAt = now
+        state.events.append(.init(id: UUID(), type: .captured, optionID: optionID, at: now, reason: draft.provider?.title))
+        refreshDecisionSupport(now: now)
+        persist()
+        return optionID
+    }
+
+    func listingMedia(for optionID: UUID) -> [ListingMedia] {
+        guard let option = state.options.first(where: { $0.id == optionID }) else { return [] }
+        let verificationEvidenceIDs = Set(
+            state.verificationTasks
+                .filter { $0.optionID == optionID }
+                .flatMap(\.evidenceIDs)
+        )
+        let evidenceByID = Dictionary(uniqueKeysWithValues: state.evidence.map { ($0.id, $0) })
+        let media = option.evidenceIDs.compactMap { evidenceID -> ListingMedia? in
+            guard !verificationEvidenceIDs.contains(evidenceID),
+                  let evidence = evidenceByID[evidenceID],
+                  let mediaID = evidence.mediaID,
+                  evidence.type == .photo || evidence.type == .screenshot else { return nil }
+            return .init(evidenceID: evidence.id, mediaID: mediaID, type: evidence.type, capturedAt: evidence.capturedAt)
+        }
+        guard let primaryEvidenceID = option.primaryEvidenceID,
+              let primaryIndex = media.firstIndex(where: { $0.evidenceID == primaryEvidenceID }) else {
+            return media
+        }
+        let primary = media[primaryIndex]
+        return [primary] + media.enumerated().compactMap { $0.offset == primaryIndex ? nil : $0.element }
+    }
+
+    func addListingMedia(_ dataItems: [Data], to optionID: UUID) throws {
+        guard !dataItems.isEmpty,
+              let optionIndex = state.options.firstIndex(where: { $0.id == optionID }) else { return }
+        var mediaIDs: [String] = []
+        do {
+            for data in dataItems {
+                mediaIDs.append(try PersistenceClient.saveMedia(data))
+            }
+        } catch {
+            PersistenceClient.deleteMedia(mediaIDs)
+            throw error
+        }
+
+        let now = Date.now
+        let evidence = mediaIDs.map {
+            Evidence(
+                id: UUID(), optionID: optionID, type: .photo, mediaID: $0,
+                bundledAssetName: nil, text: nil, sourceURL: nil, capturedAt: now
+            )
+        }
+        state.evidence.append(contentsOf: evidence)
+        state.options[optionIndex].evidenceIDs.append(contentsOf: evidence.map(\.id))
+        if state.options[optionIndex].primaryEvidenceID == nil {
+            state.options[optionIndex].primaryEvidenceID = evidence.first?.id
+        }
+        state.options[optionIndex].updatedAt = now
+        persist()
+    }
+
+    func setPrimaryListingMedia(_ evidenceID: UUID, for optionID: UUID) {
+        guard let optionIndex = state.options.firstIndex(where: { $0.id == optionID }),
+              listingMedia(for: optionID).contains(where: { $0.evidenceID == evidenceID }) else { return }
+        state.options[optionIndex].primaryEvidenceID = evidenceID
+        state.options[optionIndex].updatedAt = .now
+        persist()
+    }
+
+    func removeListingMedia(_ evidenceID: UUID, from optionID: UUID) {
+        guard let optionIndex = state.options.firstIndex(where: { $0.id == optionID }),
+              let evidenceIndex = state.evidence.firstIndex(where: { $0.id == evidenceID && $0.optionID == optionID }),
+              listingMedia(for: optionID).contains(where: { $0.evidenceID == evidenceID }) else { return }
+        let removedEvidence = state.evidence.remove(at: evidenceIndex)
+        state.options[optionIndex].evidenceIDs.removeAll { $0 == evidenceID }
+        for index in state.facts.indices where state.facts[index].optionID == optionID {
+            state.facts[index].evidenceIDs.removeAll { $0 == evidenceID }
+        }
+        if state.options[optionIndex].primaryEvidenceID == evidenceID {
+            state.options[optionIndex].primaryEvidenceID = nil
+            state.options[optionIndex].primaryEvidenceID = listingMedia(for: optionID).first?.evidenceID
+        }
+        state.options[optionIndex].updatedAt = .now
+        persist()
+
+        if let mediaID = removedEvidence.mediaID,
+           !state.evidence.contains(where: { $0.mediaID == mediaID }) {
+            PersistenceClient.deleteMedia([mediaID])
+        }
     }
 
     func toggleComparison(_ id: UUID) -> Bool {

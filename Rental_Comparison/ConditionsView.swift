@@ -42,7 +42,7 @@ struct ConditionsView: View {
         .navigationTitle("选房重点")
         .toolbar { Button("添加重点", systemImage: "plus") { showingAdd = true } }
         .alert("添加自定义条件", isPresented: $showingAdd) {
-            TextField("条件名称", text: $newConditionName)
+            TextField("例如：必须有电梯", text: $newConditionName)
             Button("取消", role: .cancel) { newConditionName = "" }
             Button("添加") {
                 let name = newConditionName.trimmingCharacters(in: .whitespacesAndNewlines)

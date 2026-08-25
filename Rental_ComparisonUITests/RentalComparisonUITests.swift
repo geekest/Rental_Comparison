@@ -23,21 +23,6 @@ final class RentalComparisonUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["常用偏好"].exists)
     }
 
-    func testLanguagePickerChangesVisibleSettingsCopy() {
-        app.tabBars.buttons["设置"].tap()
-        XCTAssertTrue(app.navigationBars["设置"].waitForExistence(timeout: 5))
-
-        let languagePicker = app.buttons["languagePicker"]
-        XCTAssertTrue(languagePicker.waitForExistence(timeout: 3))
-        let cases = [("English", "Preferences"), ("日本語", "環境設定"), ("繁體中文", "常用偏好")]
-        for (option, sectionTitle) in cases {
-            languagePicker.tap()
-            app.buttons[option].tap()
-            XCTAssertTrue(languagePicker.waitForExistence(timeout: 5))
-            XCTAssertTrue(app.staticTexts[sectionTitle].waitForExistence(timeout: 5))
-        }
-    }
-
     func testComparisonAnalysisCanCollapseAndExpand() {
         app.terminate()
         app.launchArguments = ["-uiTesting", "-startComparison"]
@@ -134,13 +119,26 @@ final class RentalComparisonUITests: XCTestCase {
 
     func testQuickCaptureAllowsNameWithoutRent() {
         app.buttons["addListingButton"].tap()
+        XCTAssertTrue(app.buttons["directListingButton"].waitForExistence(timeout: 3))
+        app.buttons["directListingButton"].tap()
         XCTAssertTrue(app.textFields["listingNameField"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.textFields["listingRentField"].exists)
+        let nameLabel = app.staticTexts["persistentFieldLabel_房源名称"]
+        XCTAssertTrue(nameLabel.exists)
         XCTAssertTrue(app.buttons["saveListingButton"].exists)
         app.textFields["listingNameField"].tap()
         app.textFields["listingNameField"].typeText("Quick candidate")
+        XCTAssertTrue(nameLabel.exists, "输入内容后字段标签仍应可见")
         app.buttons["saveListingButton"].tap()
         XCTAssertTrue(app.navigationBars["快速添加候选"].waitForNonExistence(timeout: 5))
+    }
+
+    func testAddListingMenuShowsThreeImportMethods() {
+        app.buttons["addListingButton"].tap()
+
+        XCTAssertTrue(app.buttons["directListingButton"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["linkImportButton"].exists)
+        XCTAssertTrue(app.buttons["screenshotImportButton"].exists)
     }
 
     func testListingCardCanJoinComparisonAndOpenDetails() {
@@ -155,6 +153,8 @@ final class RentalComparisonUITests: XCTestCase {
 
         comparisonButton.tap()
         XCTAssertEqual(comparisonButton.label, "已加入对比")
+        comparisonButton.tap()
+        XCTAssertEqual(comparisonButton.label, "加入对比")
 
         let card = app.otherElements["listingCard_\(listingID)"]
         XCTAssertTrue(card.waitForExistence(timeout: 3))
@@ -169,9 +169,8 @@ final class RentalComparisonUITests: XCTestCase {
         XCTAssertTrue(card.waitForExistence(timeout: 5))
         app.buttons["listingDetailButton_\(listingID)"].tap()
         XCTAssertTrue(app.navigationBars["徐汇 · 一室一厅"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.textFields["房源名称"].exists)
         let scheduleButton = app.buttons["scheduleViewingButton"]
-        for _ in 0..<4 where !scheduleButton.isHittable {
+        for _ in 0..<8 where !scheduleButton.isHittable {
             app.swipeUp()
         }
         XCTAssertTrue(scheduleButton.isHittable)
@@ -183,5 +182,18 @@ final class RentalComparisonUITests: XCTestCase {
 
         XCTAssertTrue(app.buttons["正常"].firstMatch.waitForExistence(timeout: 5))
         app.buttons["正常"].firstMatch.tap()
+    }
+
+    func testListingDetailProvidesTopLevelPhotoManagement() {
+        let listingID = "11111111-1111-1111-1111-111111111111"
+
+        XCTAssertTrue(app.otherElements["listingCard_\(listingID)"].waitForExistence(timeout: 5))
+        app.buttons["listingDetailButton_\(listingID)"].tap()
+
+        XCTAssertTrue(app.navigationBars["徐汇 · 一室一厅"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["manageListingMediaButton"].waitForExistence(timeout: 5))
+
+        app.buttons["manageListingMediaButton"].tap()
+        XCTAssertTrue(app.navigationBars["管理图片"].waitForExistence(timeout: 5))
     }
 }

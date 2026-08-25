@@ -47,10 +47,48 @@ struct WarmToolbarIcon: View {
     }
 }
 
+struct PersistentFormField<Content: View>: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    let title: String
+    private let content: Content
+
+    init(_ title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 8) {
+                fieldLabel
+                content
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else {
+            LabeledContent {
+                content
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } label: {
+                fieldLabel
+            }
+        }
+    }
+
+    private var fieldLabel: some View {
+        Text(title)
+            .accessibilityIdentifier("persistentFieldLabel_\(title)")
+    }
+}
+
 #Preview("设计组件") {
     VStack(spacing: 20) {
         WarmSectionTitle(title: "下一步", detail: "3 项")
         WarmToolbarIcon(systemImage: "gearshape")
+        Form {
+            PersistentFormField("月租") {
+                TextField("例如：3330", text: .constant(""))
+            }
+        }
     }
     .padding()
     .background(WarmDesign.canvas)

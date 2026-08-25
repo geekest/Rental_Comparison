@@ -10,6 +10,11 @@ struct RentalComparisonApp: App {
                 .environment(store)
                 .environment(\.locale, store.preferences.language.locale)
                 .tint(.blue)
+                .onOpenURL { url in
+                    if let sharedURL = ImportURLRouter.sharedURL(from: url) {
+                        store.receiveSharedURL(sharedURL)
+                    }
+                }
         }
     }
 }
