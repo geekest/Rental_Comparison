@@ -1,3 +1,5 @@
+> 本计划记录的页面级横向方案已被否定；当前实现与验证记录见 [fix-comparison-section-only-sync.md](fix-comparison-section-only-sync.md)。
+
 # 修复详细数据延迟加载后的横向同步
 
 ## 1. 任务目标
