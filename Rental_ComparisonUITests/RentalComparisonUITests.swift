@@ -40,7 +40,7 @@ final class RentalComparisonUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["硬性冲突"].waitForExistence(timeout: 3))
     }
 
-    func testComparisonSectionsSynchronizeWithoutMovingHeader() {
+    func testComparisonSectionsSynchronizeIncludingHeader() {
         app.terminate()
         app.launchArguments = ["-uiTesting", "-startComparison"]
         app.launch()
@@ -78,7 +78,11 @@ final class RentalComparisonUITests: XCTestCase {
         }
         XCTAssertTrue(commuteMetric.waitForExistence(timeout: 3))
         XCTAssertLessThan(commuteMetric.frame.minX, initialX)
-        XCTAssertEqual(header.frame.minX, initialHeaderX, accuracy: 0.5)
+        XCTAssertEqual(
+            header.frame.minX - initialHeaderX,
+            commuteMetric.frame.minX - initialX,
+            accuracy: 2
+        )
     }
 
     func testComparisonDetailsSynchronizeDataWithoutMovingPageTitles() {
@@ -107,9 +111,9 @@ final class RentalComparisonUITests: XCTestCase {
             detailsTitle.frame.minX,
             analysisTitle.frame.minX,
             costSectionTitle.frame.minX,
-            commuteSectionTitle.frame.minX,
-            header.frame.minX
+            commuteSectionTitle.frame.minX
         ]
+        let initialHeaderX = header.frame.minX
 
         let thirdCommuteCell = app.staticTexts["46 分钟"]
         let thirdConditionCell = app.staticTexts["单程通勤不超过 40 分钟"]
@@ -135,7 +139,7 @@ final class RentalComparisonUITests: XCTestCase {
         XCTAssertEqual(analysisTitle.frame.minX, initialTitleXs[1], accuracy: 0.5)
         XCTAssertEqual(costSectionTitle.frame.minX, initialTitleXs[2], accuracy: 0.5)
         XCTAssertEqual(commuteSectionTitle.frame.minX, initialTitleXs[3], accuracy: 0.5)
-        XCTAssertEqual(header.frame.minX, initialTitleXs[4], accuracy: 0.5)
+        XCTAssertEqual(header.frame.minX - initialHeaderX, costDelta, accuracy: 2)
 
         detailsTitle.tap()
         detailsTitle.tap()

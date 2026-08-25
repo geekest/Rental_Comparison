@@ -297,7 +297,10 @@ struct ComparisonView: View {
         .sheet(isPresented: $showingFinal) { FinalDecisionView() }
         .safeAreaInset(edge: .top, spacing: 0) {
             if listings.count >= 2 {
-                ComparisonHeader(listings: listings)
+                ComparisonHeader(
+                    listings: listings,
+                    scrollCoordinator: comparisonScrollCoordinator
+                )
                     .padding(.vertical, 8)
                     .background(.background)
                     .overlay(alignment: .bottom) { Divider() }
@@ -310,6 +313,7 @@ struct ComparisonView: View {
 private struct ComparisonHeader: View {
     @Environment(AppStore.self) private var store
     let listings: [Listing]
+    let scrollCoordinator: ComparisonScrollCoordinator
 
     var body: some View {
         ScrollView(.horizontal) {
@@ -334,6 +338,7 @@ private struct ComparisonHeader: View {
                     .frame(width: ComparisonLayout.columnWidth, alignment: .leading)
                 }
             }
+            .background(ComparisonScrollResolver(coordinator: scrollCoordinator))
         }
         .padding(.horizontal, ComparisonLayout.sectionHorizontalInset)
         .scrollIndicators(.hidden)
