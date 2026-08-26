@@ -11,6 +11,7 @@ private final class ComparisonScrollCoordinator {
 
     private var scrollViews: [ObjectIdentifier: WeakScrollView] = [:]
     private var observations: [ObjectIdentifier: NSKeyValueObservation] = [:]
+    private var lastOffsetX: CGFloat = 0
     private var isSynchronizing = false
 
     func register(_ scrollView: UIScrollView) {
@@ -22,26 +23,47 @@ private final class ComparisonScrollCoordinator {
             guard let scrollView else { return }
             self?.synchronize(from: scrollView)
         }
+        applyStoredOffset(to: scrollView, attemptsRemaining: 6)
     }
 
     private func synchronize(from source: UIScrollView) {
         guard !isSynchronizing else { return }
+        lastOffsetX = source.contentOffset.x
+        scrollViews = scrollViews.filter { $0.value.value != nil }
+
         isSynchronizing = true
         defer { isSynchronizing = false }
-
-        let sourceOffset = source.contentOffset.x
-        scrollViews = scrollViews.filter { $0.value.value != nil }
         for (id, weakScrollView) in scrollViews {
             guard let target = weakScrollView.value, id != ObjectIdentifier(source) else { continue }
-            let minimumX = -target.adjustedContentInset.left
-            let maximumX = max(minimumX, target.contentSize.width - target.bounds.width + target.adjustedContentInset.right)
-            let targetX = min(max(sourceOffset, minimumX), maximumX)
-            guard abs(target.contentOffset.x - targetX) > 0.5 else { continue }
-
-            var targetOffset = target.contentOffset
-            targetOffset.x = targetX
-            target.setContentOffset(targetOffset, animated: false)
+            setHorizontalOffset(lastOffsetX, on: target)
         }
+    }
+
+    private func applyStoredOffset(to scrollView: UIScrollView, attemptsRemaining: Int) {
+        DispatchQueue.main.async { [weak self, weak scrollView] in
+            guard let self, let scrollView else { return }
+            let minimumX = -scrollView.adjustedContentInset.left
+            let maximumX = max(minimumX, scrollView.contentSize.width - scrollView.bounds.width + scrollView.adjustedContentInset.right)
+            guard maximumX > minimumX + 0.5 || attemptsRemaining == 0 else {
+                self.applyStoredOffset(to: scrollView, attemptsRemaining: attemptsRemaining - 1)
+                return
+            }
+
+            self.isSynchronizing = true
+            self.setHorizontalOffset(self.lastOffsetX, on: scrollView)
+            self.isSynchronizing = false
+        }
+    }
+
+    private func setHorizontalOffset(_ offsetX: CGFloat, on scrollView: UIScrollView) {
+        let minimumX = -scrollView.adjustedContentInset.left
+        let maximumX = max(minimumX, scrollView.contentSize.width - scrollView.bounds.width + scrollView.adjustedContentInset.right)
+        let targetX = min(max(offsetX, minimumX), maximumX)
+        guard abs(scrollView.contentOffset.x - targetX) > 0.5 else { return }
+
+        var targetOffset = scrollView.contentOffset
+        targetOffset.x = targetX
+        scrollView.setContentOffset(targetOffset, animated: false)
     }
 }
 
@@ -61,6 +83,9 @@ private struct ComparisonScrollResolver: UIViewRepresentable {
 
 private final class ComparisonScrollResolverView: UIView {
     var resolve: ((UIScrollView) -> Void)?
+    private var resolved = false
+    private var resolutionScheduled = false
+    private var remainingAttempts = 8
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -75,16 +100,36 @@ private final class ComparisonScrollResolverView: UIView {
 
     override func didMoveToWindow() {
         super.didMoveToWindow()
-        guard window != nil else { return }
+        resolveScrollViewIfNeeded()
+    }
 
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        resolveScrollViewIfNeeded()
+    }
+
+    private func resolveScrollViewIfNeeded() {
+        guard window != nil, !resolved, !resolutionScheduled else { return }
+        resolutionScheduled = true
         DispatchQueue.main.async { [weak self] in
-            var ancestor = self?.superview
+            guard let self else { return }
+            self.resolutionScheduled = false
+
+            var ancestor = self.superview
             while let view = ancestor {
-                if let scrollView = view as? UIScrollView {
-                    self?.resolve?(scrollView)
+                if let scrollView = view as? UIScrollView,
+                   scrollView.contentSize.width > scrollView.bounds.width + 1 {
+                    self.resolved = true
+                    self.resolve?(scrollView)
                     return
                 }
                 ancestor = view.superview
+            }
+
+            guard self.remainingAttempts > 0 else { return }
+            self.remainingAttempts -= 1
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+                self?.resolveScrollViewIfNeeded()
             }
         }
     }
@@ -252,7 +297,10 @@ struct ComparisonView: View {
         .sheet(isPresented: $showingFinal) { FinalDecisionView() }
         .safeAreaInset(edge: .top, spacing: 0) {
             if listings.count >= 2 {
-                ComparisonHeader(listings: listings, scrollCoordinator: comparisonScrollCoordinator)
+                ComparisonHeader(
+                    listings: listings,
+                    scrollCoordinator: comparisonScrollCoordinator
+                )
                     .padding(.vertical, 8)
                     .background(.background)
                     .overlay(alignment: .bottom) { Divider() }
@@ -261,6 +309,7 @@ struct ComparisonView: View {
         .accessibilityIdentifier("comparisonScreen")
     }
 }
+
 private struct ComparisonHeader: View {
     @Environment(AppStore.self) private var store
     let listings: [Listing]
@@ -285,6 +334,7 @@ private struct ComparisonHeader: View {
                                 .font(.subheadline)
                         }
                     }
+                    .padding(.horizontal, ComparisonLayout.columnContentInset)
                     .frame(width: ComparisonLayout.columnWidth, alignment: .leading)
                 }
             }
@@ -412,8 +462,8 @@ private struct ComparisonSection<Content: View>: View {
                             .frame(maxHeight: .infinity, alignment: .top)
                             .overlay(alignment: .trailing) { Divider() }
                     }
-                    .background(ComparisonScrollResolver(coordinator: scrollCoordinator))
                 }
+                .background(ComparisonScrollResolver(coordinator: scrollCoordinator))
             }
             .scrollIndicators(.hidden)
             .accessibilityIdentifier("comparisonSection-\(title)")
