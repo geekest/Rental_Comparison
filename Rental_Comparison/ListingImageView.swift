@@ -92,12 +92,15 @@ struct ListingMediaHeaderView: View {
         } else {
             TabView(selection: $selectedEvidenceID) {
                 ForEach(media) { item in
-                    ListingMediaImage(mediaID: item.mediaID, label: "\(listingName)的\(item.isScreenshot ? "原始截图" : "房源照片")")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .tag(Optional(item.evidenceID))
-                        .overlay(alignment: .bottomLeading) {
-                            if item.isScreenshot { screenshotBadge }
-                        }
+                    GeometryReader { proxy in
+                        ListingMediaImage(mediaID: item.mediaID, label: "\(listingName)的\(item.isScreenshot ? "原始截图" : "房源照片")")
+                            .frame(width: proxy.size.width, height: proxy.size.height)
+                    }
+                    .clipped()
+                    .tag(Optional(item.evidenceID))
+                    .overlay(alignment: .bottomLeading) {
+                        if item.isScreenshot { screenshotBadge }
+                    }
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: media.count > 1 ? .automatic : .never))
@@ -125,11 +128,14 @@ struct ListingMediaHeaderView: View {
         }
         .accessibilityLabel("添加房源图片")
         .accessibilityIdentifier("addListingMediaButton")
+        .contentShape(Circle())
         .padding(14)
+        .zIndex(1)
     }
 
     @MainActor
     private func importPhotos(_ items: [PhotosPickerItem]) async {
+        guard !items.isEmpty else { return }
         defer { selectedPhotos.removeAll() }
         do {
             let dataItems = try await items.asyncCompactMap { try await $0.loadTransferable(type: Data.self) }
@@ -239,6 +245,7 @@ struct ListingMediaManagerView: View {
 
     @MainActor
     private func importPhotos(_ items: [PhotosPickerItem]) async {
+        guard !items.isEmpty else { return }
         defer { selectedPhotos.removeAll() }
         do {
             let dataItems = try await items.asyncCompactMap { try await $0.loadTransferable(type: Data.self) }
@@ -257,8 +264,11 @@ private struct ListingMediaGridCell: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            ListingMediaImage(mediaID: item.mediaID, label: item.isScreenshot ? "原始截图" : "房源照片")
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            GeometryReader { proxy in
+                ListingMediaImage(mediaID: item.mediaID, label: item.isScreenshot ? "原始截图" : "房源照片")
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             if isPrimary {
                 Label("主图", systemImage: "star.fill")
                     .font(.caption2.weight(.bold))
