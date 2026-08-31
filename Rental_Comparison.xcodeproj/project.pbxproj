@@ -18,6 +18,7 @@
 		25A2F25DC8B0B465709A5C13 /* ReportBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01CB5A970DCA0EA5C07FD5D1 /* ReportBuilder.swift */; };
 		28897A8C204092AEF19211F9 /* ComparisonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA8D1416119ACEF8093016D5 /* ComparisonView.swift */; };
 		28F7CE4DBCCC71143911A95A /* DecisionEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3250619863214D1828152FD5 /* DecisionEngineTests.swift */; };
+		2B393419291DCEEABA72A66F /* ListingImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4D61C5D4AE5CEECBA5341E5 /* ListingImportTests.swift */; };
 		2BEC25F81FED5A2213016E64 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 70CEF88320D629861CEDC48A /* Assets.xcassets */; };
 		359C7DEC535A2BD6D50A3DCF /* WorkspaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2B0061EAA6573B1A05C2311 /* WorkspaceTests.swift */; };
 		3849523CB1C16FF0EBE6A0A7 /* DecisionReadinessEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE4E4B4CD70D11ED694EC9B /* DecisionReadinessEngine.swift */; };
@@ -45,6 +46,7 @@
 		D175ED9EECBCC7580DC97AF6 /* DecisionLegacyProjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1C09C66DFEED2BAB1BDE6F /* DecisionLegacyProjectionTests.swift */; };
 		D5E6ADACA2D123880A007500 /* UnknownEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68D6B413072FBD79DCCA0AA2 /* UnknownEngineTests.swift */; };
 		D88CD8E667F4C9FE33DAE5EB /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = E3AD3F5A62060C5D5AA69523 /* Localizable.strings */; };
+		DC1CF77584986A204856C4DB /* ListingImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFF94945A20F5F6DA76798DA /* ListingImport.swift */; };
 		E5678A88D5A146DA6B9B4222 /* ListingImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616280B477221429245E9C4D /* ListingImageView.swift */; };
 		EF9891E9A6FB9EBA05B62A52 /* DecisionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F64629542B49FDC340DDC1 /* DecisionModels.swift */; };
 		F0BB5E3317E865FB70F969B3 /* RentalComparisonUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C167F50290B75FC05E826D73 /* RentalComparisonUITests.swift */; };
